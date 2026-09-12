@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LobbyCast - File Transfer Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#e3e2e7",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "on-surface": "#1a1b1f",
+                        "on-background": "#1a1b1f",
+                        "on-secondary-container": "#fffbff",
+                        "tertiary-fixed": "#9cf0ff",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#dad9df",
+                        "on-tertiary-fixed": "#001f24",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2f3034",
+                        "on-primary-container": "#fefcff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#eeedf3",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary": "#4c4aca",
+                        "primary": "#0058bc",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#f7feff",
+                        "on-surface-variant": "#414755",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#0c006a",
+                        "outline": "#717786",
+                        "inverse-on-surface": "#f1f0f5",
+                        "secondary-container": "#6664e4",
+                        "primary-container": "#0070eb",
+                        "surface-container-highest": "#e3e2e7",
+                        "tertiary": "#006672",
+                        "inverse-primary": "#adc6ff",
+                        "surface-container-high": "#e9e7ed",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004493",
+                        "surface": "#faf9fe",
+                        "surface-tint": "#005bc1",
+                        "surface-bright": "#faf9fe",
+                        "surface-container-low": "#f4f3f8",
+                        "on-secondary-fixed-variant": "#3631b4",
+                        "tertiary-container": "#008190",
+                        "tertiary-fixed-dim": "#00daf3",
+                        "secondary-fixed-dim": "#c2c1ff",
+                        "primary-fixed": "#d8e2ff",
+                        "on-primary-fixed": "#001a41",
+                        "secondary-fixed": "#e2dfff",
+                        "outline-variant": "#c1c6d7",
+                        "error-container": "#ffdad6",
+                        "background": "#faf9fe"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "sm": "8px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "unit": "4px",
+                        "margin-desktop": "48px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "title-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "status-code": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "title-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "status-code": ["13px", { lineHeight: "18px", fontWeight: "400" }],
+                        "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .flow-line-1 { animation: flow 2s linear infinite; }
+        .flow-line-2 { animation: flow 2.5s linear infinite reverse; }
+        .flow-line-3 { animation: flow 1.8s linear infinite; }
+        @keyframes flow {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+        .pulse-ring {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(1.1); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-lg min-h-screen pb-24 selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 shadow-sm z-40">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 w-full">
+<button aria-label="Settings" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-high transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings_ethernet</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold tracking-tight text-primary dark:text-primary-fixed-dim">LobbyCast</h1>
+<button aria-label="Profile" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-high transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center bg-surface-container-high">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+</button>
+</div>
+</header>
+<main class="px-margin-mobile md:px-margin-desktop py-lg max-w-5xl mx-auto space-y-xl">
+<!-- Network Visualization -->
+<section class="bg-surface-container-lowest rounded-xl p-lg shadow-[0px_4px_20px_rgba(0,88,188,0.08)] border border-outline-variant/20 relative overflow-hidden min-h-[300px] flex items-center justify-center">
+<!-- Background Grid -->
+<div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(circle at center, #0058bc 1px, transparent 1px); background-size: 24px 24px;"></div>
+<div class="relative w-full max-w-md aspect-video flex items-center justify-center z-10">
+<!-- Center Node (Source) -->
+<div class="absolute z-20 pulse-ring bg-white rounded-full p-4 shadow-[0px_4px_20px_rgba(0,88,188,0.2)] border-2 border-primary border-dashed flex flex-col items-center justify-center w-24 h-24">
+<span class="material-symbols-outlined text-primary text-4xl mb-1" style="font-variation-settings: 'FILL' 1;">router</span>
+<span class="font-status-code text-status-code text-primary">Source</span>
+</div>
+<!-- Client Nodes & SVG Lines -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="xMidYMid meet" viewbox="0 0 400 225">
+<defs>
+<lineargradient id="lineGrad1" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#0058bc" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#00daf3" stop-opacity="0.2"></stop>
+</lineargradient>
+</defs>
+<!-- Line to Top Left -->
+<path class="flow-line-1" d="M 200 112 L 100 60" stroke="url(#lineGrad1)" stroke-dasharray="6,4" stroke-width="2"></path>
+<!-- Line to Top Right -->
+<path class="flow-line-2" d="M 200 112 L 300 60" stroke="url(#lineGrad1)" stroke-dasharray="6,4" stroke-width="2"></path>
+<!-- Line to Bottom Left -->
+<path class="flow-line-3" d="M 200 112 L 100 165" stroke="url(#lineGrad1)" stroke-dasharray="6,4" stroke-width="2"></path>
+<!-- Line to Bottom Right -->
+<path class="flow-line-1" d="M 200 112 L 300 165" stroke="url(#lineGrad1)" stroke-dasharray="6,4" stroke-width="2"></path>
+</svg>
+<!-- Top Left Node -->
+<div class="absolute top-[20%] left-[20%] -translate-x-1/2 -translate-y-1/2 bg-surface-container-low rounded-full p-2 shadow-sm border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 0;">laptop_mac</span>
+</div>
+<!-- Top Right Node -->
+<div class="absolute top-[20%] right-[20%] translate-x-1/2 -translate-y-1/2 bg-surface-container-low rounded-full p-2 shadow-sm border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 0;">smartphone</span>
+</div>
+<!-- Bottom Left Node -->
+<div class="absolute bottom-[20%] left-[20%] -translate-x-1/2 translate-y-1/2 bg-surface-container-low rounded-full p-2 shadow-sm border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">tablet_mac</span>
+</div>
+<!-- Bottom Right Node -->
+<div class="absolute bottom-[20%] right-[20%] translate-x-1/2 translate-y-1/2 bg-surface-container-low rounded-full p-2 shadow-sm border border-outline-variant/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">tv</span>
+</div>
+</div>
+</section>
+<!-- Active Transfers List -->
+<section class="space-y-md">
+<div class="flex justify-between items-end mb-sm">
+<h2 class="font-title-md text-title-md text-on-surface">Active Transfers</h2>
+<span class="font-status-code text-status-code text-primary bg-primary-fixed px-2 py-1 rounded">4/4 Nodes</span>
+</div>
+<!-- Transfer Item 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-[0px_4px_20px_rgba(0,88,188,0.05)] border border-outline-variant/20 hover:border-primary/30 transition-colors flex flex-col gap-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="bg-surface-container-low p-2 rounded text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">movie</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-medium text-on-surface truncate max-w-[200px] md:max-w-md">project_render_v4_final.mp4</p>
+<p class="font-status-code text-status-code text-on-surface-variant">Sending to Node-Alpha</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-primary">78%</p>
+<p class="font-status-code text-status-code text-on-surface-variant">45.2 MB/s</p>
+</div>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden mt-1 relative">
+<div class="bg-gradient-to-r from-primary to-tertiary-fixed-dim h-2 rounded-full" style="width: 78%"></div>
+<!-- Shine effect -->
+<div class="absolute top-0 left-0 h-full w-1/4 bg-white/30 skew-x-12 animate-[slide_2s_infinite]"></div>
+</div>
+</div>
+<!-- Transfer Item 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-[0px_4px_20px_rgba(0,88,188,0.05)] border border-outline-variant/20 hover:border-primary/30 transition-colors flex flex-col gap-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="bg-surface-container-low p-2 rounded text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">folder_zip</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-medium text-on-surface truncate max-w-[200px] md:max-w-md">design_assets_Q3.zip</p>
+<p class="font-status-code text-status-code text-on-surface-variant">Sending to Node-Beta</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-secondary">32%</p>
+<p class="font-status-code text-status-code text-on-surface-variant">28.5 MB/s</p>
+</div>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden mt-1 relative">
+<div class="bg-gradient-to-r from-secondary to-secondary-fixed-dim h-2 rounded-full" style="width: 32%"></div>
+</div>
+</div>
+<!-- Transfer Item 3 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-[0px_4px_20px_rgba(0,88,188,0.05)] border border-outline-variant/20 hover:border-primary/30 transition-colors flex flex-col gap-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="bg-surface-container-low p-2 rounded text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg font-medium text-on-surface truncate max-w-[200px] md:max-w-md">Q3_financial_report.pdf</p>
+<p class="font-status-code text-status-code text-on-surface-variant">Sending to Node-Gamma</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-tertiary">99%</p>
+<p class="font-status-code text-status-code text-on-surface-variant">12.1 MB/s</p>
+</div>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden mt-1 relative">
+<div class="bg-gradient-to-r from-tertiary to-tertiary-fixed-dim h-2 rounded-full" style="width: 99%"></div>
+</div>
+</div>
+</section>
+<style>
+            @keyframes slide {
+                from { transform: translateX(-100%); }
+                to { transform: translateX(400%); }
+            }
+        </style>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container/90 backdrop-blur-lg border-t border-outline-variant/30 shadow-[0px_-4px_20px_rgba(0,88,188,0.12)] md:hidden">
+<div class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2">
+<!-- Inactive: Discover -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">radar</span>
+<span class="font-label-caps text-label-caps">Discover</span>
+</button>
+<!-- Inactive: Host -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">sensors</span>
+<span class="font-label-caps text-label-caps">Host</span>
+</button>
+<!-- Inactive: Waiting -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">hourglass_empty</span>
+<span class="font-label-caps text-label-caps">Waiting</span>
+</button>
+<!-- Active: Transfer -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1.5 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">dynamic_feed</span>
+<span class="font-label-caps text-label-caps">Transfer</span>
+</button>
+</div>
+</nav>
+</body></html>

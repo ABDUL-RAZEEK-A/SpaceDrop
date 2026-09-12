@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LobbyCast - Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#008190",
+                      "on-surface": "#1a1b1f",
+                      "on-primary-container": "#fefcff",
+                      "surface-variant": "#e3e2e7",
+                      "surface-container-low": "#f4f3f8",
+                      "on-secondary-fixed-variant": "#3631b4",
+                      "on-tertiary-container": "#f7feff",
+                      "on-tertiary-fixed": "#001f24",
+                      "surface-tint": "#005bc1",
+                      "error": "#ba1a1a",
+                      "inverse-primary": "#adc6ff",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#fffbff",
+                      "outline": "#717786",
+                      "on-primary-fixed": "#001a41",
+                      "on-surface-variant": "#414755",
+                      "surface-dim": "#dad9df",
+                      "tertiary": "#006672",
+                      "surface": "#faf9fe",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#e3e2e7",
+                      "on-primary-fixed-variant": "#004493",
+                      "primary-fixed": "#d8e2ff",
+                      "surface-container": "#eeedf3",
+                      "inverse-on-surface": "#f1f0f5",
+                      "secondary-fixed-dim": "#c2c1ff",
+                      "secondary-container": "#6664e4",
+                      "on-tertiary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#004f58",
+                      "outline-variant": "#c1c6d7",
+                      "secondary-fixed": "#e2dfff",
+                      "secondary": "#4c4aca",
+                      "on-error": "#ffffff",
+                      "primary-container": "#0070eb",
+                      "surface-bright": "#faf9fe",
+                      "on-background": "#1a1b1f",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#00daf3",
+                      "tertiary-fixed": "#9cf0ff",
+                      "primary-fixed-dim": "#adc6ff",
+                      "on-secondary-fixed": "#0c006a",
+                      "background": "#faf9fe",
+                      "error-container": "#ffdad6",
+                      "inverse-surface": "#2f3034",
+                      "surface-container-high": "#e9e7ed",
+                      "primary": "#0058bc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "gutter": "16px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "xs": "4px",
+                      "unit": "4px",
+                      "margin-desktop": "48px"
+              },
+              "fontFamily": {
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "title-md": [
+                              "Inter"
+                      ],
+                      "status-code": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "title-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "status-code": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0px 4px 20px rgba(0, 88, 188, 0.12);
+        }
+        .status-ring-static {
+            border: 3px solid #717786;
+        }
+        .status-ring-transmitting {
+            border: 3px dashed #00daf3;
+            animation: spin 4s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- Navigation Drawer (SideNav) - Hidden on Mobile, Fixed on Desktop -->
+<nav class="hidden md:flex fixed inset-y-0 left-0 z-[60] flex-col p-md h-full w-80 rounded-r-xl bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant/20 shadow-xl transition-all duration-300 ease-in-out">
+<div class="flex items-center gap-4 mb-8">
+<div class="w-12 h-12 rounded-full overflow-hidden status-ring-static relative">
+<img alt="User Profile Avatar" class="w-full h-full object-cover rounded-full" data-alt="A modern, high-tech abstract avatar or stylized profile picture representing a network node in a light, clinical UI environment with subtle blue accents. The image should feel sleek, professional, and digital." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARa1U4UFhNAjHnfXqQRpQEYWzIn1UX6ReTuDxLE34BQnKCAnydfQbt9nr4haH8eSqobopBs9-YcE3LoqYy5bnDlAGJRqQGg7HhwnbhS-ESKZG9-c2tlLqU8MTKZOGzevxwm-jHGhBmOjy_P7b57WdXDesRfrWVvENa8fUtZns6iwYcsg2rpGe-VWdPIaO921o_Bo5NYUYOTRWfH5qHad4_T-xEP0-eLMqn5HvpvKG67RAopeUOl8lDLA"/>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface">Network Node-01</h2>
+<p class="font-status-code text-status-code text-on-surface-variant">192.168.1.45</p>
+<span class="inline-flex items-center gap-1 mt-1 text-xs text-primary"><span class="material-symbols-outlined text-[14px]">radio_button_checked</span> Active</span>
+</div>
+</div>
+<ul class="space-y-2 flex-grow">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container font-semibold rounded-lg font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+                    My Profile
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-lg hover:bg-surface-variant/30 transition-colors font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+                    Network Stats
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-lg hover:bg-surface-variant/30 transition-colors font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+                    Security Settings
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-lg hover:bg-surface-variant/30 transition-colors font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+                    Transfer History
+                </a>
+</li>
+</ul>
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant/50 rounded-lg hover:bg-surface-variant/30 transition-colors font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+                Help &amp; Support
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow flex flex-col md:pl-[320px] pb-[80px] md:pb-0">
+<!-- TopAppBar - Mobile Only -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile py-4 w-full top-0 sticky bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 shadow-sm z-50">
+<button class="text-on-surface-variant dark:text-outline hover:bg-surface-container-high transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="settings_ethernet">settings_ethernet</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-primary dark:text-primary-fixed-dim">LobbyCast</h1>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+</header>
+<div class="px-margin-mobile md:px-margin-desktop py-lg max-w-5xl mx-auto w-full">
+<!-- Page Header -->
+<div class="mb-xl flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">My Profile</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Manage your network identity and local preferences.</p>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Identity Card (Spans 2 columns on desktop) -->
+<div class="md:col-span-2 glass-panel rounded-xl p-lg flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
+<!-- Subtle background decoration -->
+<div class="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="w-32 h-32 rounded-full overflow-hidden status-ring-static relative flex-shrink-0 bg-surface">
+<img alt="Node Avatar" class="w-full h-full object-cover" data-alt="A clean, abstract technical illustration of a generic network node or user avatar. Minimalist, light theme with subtle gradient blues and white. Looks like a professional profile picture in a sleek app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlkwmnMeucC7z7_5FgTs-DhAiIbJIylhI5EhWqY-Q20tuOwsVKhOwf8YzOO8LBZ9W8tniFgYpGuzksmPsxalNmZjX1zapzzqoIfAItJ91OsvhxcxUfrVK_arc3Kd6sfIEIO1D7Gv6pO6MSjw5PX_8kuNRr7fvVhILInIR6jmcetcIuPX23e-ULfPfP5hYmrr4Un3287uyHq19NFt96kELo3jyXUigrT58dFaYNbQ9QHaHurmRGecBmaA"/>
+</div>
+<div class="flex-grow text-center sm:text-left z-10">
+<div class="flex items-center justify-center sm:justify-start gap-2 mb-1">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Network Node-01</h2>
+<span class="material-symbols-outlined text-primary text-[24px]" title="Verified Node">verified</span>
+</div>
+<p class="font-status-code text-status-code text-on-surface-variant mb-4 px-3 py-1 bg-surface-container inline-block rounded-md border border-outline-variant/30">IP: 192.168.1.45</p>
+<div class="flex flex-wrap gap-3 justify-center sm:justify-start mt-2">
+<button class="bg-primary-container text-on-primary-container font-body-sm text-body-sm px-4 py-2 rounded-lg font-medium hover:bg-primary/90 hover:text-white transition-colors shadow-sm">
+                                Edit Profile
+                            </button>
+<button class="bg-surface text-primary border border-outline-variant font-body-sm text-body-sm px-4 py-2 rounded-lg font-medium hover:bg-surface-variant transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">share</span> Share ID
+                            </button>
+</div>
+</div>
+</div>
+<!-- Quick Stats Card -->
+<div class="glass-panel rounded-xl p-lg flex flex-col justify-between">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">data_usage</span> Activity
+                    </h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label-caps text-label-caps text-on-surface-variant mb-1">
+<span>Data Transferred</span>
+<span>14.2 GB</span>
+</div>
+<div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-tertiary-container w-[70%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between font-label-caps text-label-caps text-on-surface-variant mb-1">
+<span>Connections Made</span>
+<span>128</span>
+</div>
+<div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-secondary to-primary w-[45%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Settings Categories -->
+<!-- Account Information -->
+<div class="glass-panel rounded-xl p-lg hover:shadow-md transition-shadow cursor-pointer group">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-4 group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined text-[28px]">manage_accounts</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface mb-2 group-hover:text-primary transition-colors">Account Information</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Update name, visibility settings, and node identifiers.</p>
+</div>
+<!-- Device Preferences -->
+<div class="glass-panel rounded-xl p-lg hover:shadow-md transition-shadow cursor-pointer group">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-4 group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined text-[28px]">phonelink_setup</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface mb-2 group-hover:text-primary transition-colors">Device Preferences</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Configure connection limits, theme, and notifications.</p>
+</div>
+<!-- Linked Storage -->
+<div class="glass-panel rounded-xl p-lg hover:shadow-md transition-shadow cursor-pointer group">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-4 group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined text-[28px]">folder_managed</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface mb-2 group-hover:text-primary transition-colors">Linked Storage</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Manage default download locations and storage limits.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar - Mobile Only -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface-container/90 backdrop-blur-lg border-t border-outline-variant/30 shadow-[0px_-4px_20px_rgba(0,88,188,0.12)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 group w-16" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:bg-surface-variant/50 rounded-full px-4 py-1 transition-colors" data-icon="radar">radar</span>
+<span class="font-label-caps text-label-caps text-center">Discover</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 group w-16" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:bg-surface-variant/50 rounded-full px-4 py-1 transition-colors" data-icon="sensors">sensors</span>
+<span class="font-label-caps text-label-caps text-center">Host</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 group w-16" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:bg-surface-variant/50 rounded-full px-4 py-1 transition-colors" data-icon="hourglass_empty">hourglass_empty</span>
+<span class="font-label-caps text-label-caps text-center">Waiting</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 group w-16" href="#">
+<span class="material-symbols-outlined mb-1 group-hover:bg-surface-variant/50 rounded-full px-4 py-1 transition-colors" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-label-caps text-label-caps text-center">Transfer</span>
+</a>
+<!-- The active Profile tab doesn't perfectly match the bottom nav json, but represents a common pattern where profile might not be in the primary bottom 4, or accessed via top bar. I will leave the bottom nav inactive as this is a sub-page relative to those 4 main functions in the context of the bottom nav array provided. -->
+</nav>
+</body></html>

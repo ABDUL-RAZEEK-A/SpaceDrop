@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LobbyCast - Discover</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e3e2e7",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "on-surface": "#1a1b1f",
+                        "on-background": "#1a1b1f",
+                        "on-secondary-container": "#fffbff",
+                        "tertiary-fixed": "#9cf0ff",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#dad9df",
+                        "on-tertiary-fixed": "#001f24",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2f3034",
+                        "on-primary-container": "#fefcff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#eeedf3",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary": "#4c4aca",
+                        "primary": "#0058bc",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#f7feff",
+                        "on-surface-variant": "#414755",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#0c006a",
+                        "outline": "#717786",
+                        "inverse-on-surface": "#f1f0f5",
+                        "secondary-container": "#6664e4",
+                        "primary-container": "#0070eb",
+                        "surface-container-highest": "#e3e2e7",
+                        "tertiary": "#006672",
+                        "inverse-primary": "#adc6ff",
+                        "surface-container-high": "#e9e7ed",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004493",
+                        "surface": "#faf9fe",
+                        "surface-tint": "#005bc1",
+                        "surface-bright": "#faf9fe",
+                        "surface-container-low": "#f4f3f8",
+                        "on-secondary-fixed-variant": "#3631b4",
+                        "tertiary-container": "#008190",
+                        "tertiary-fixed-dim": "#00daf3",
+                        "secondary-fixed-dim": "#c2c1ff",
+                        "primary-fixed": "#d8e2ff",
+                        "on-primary-fixed": "#001a41",
+                        "secondary-fixed": "#e2dfff",
+                        "outline-variant": "#c1c6d7",
+                        "error-container": "#ffdad6",
+                        "background": "#faf9fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "unit": "4px",
+                        "margin-desktop": "48px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "title-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "display-lg": ["Inter"],
+                        "status-code": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "status-code": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .radar-ping {
+            animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        .radar-sweep {
+            animation: sweep 4s linear infinite;
+        }
+        @keyframes sweep {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-[88px] md:pb-0 font-body-lg flex flex-col">
+<!-- TopAppBar (Mobile & Desktop) -->
+<header class="w-full top-0 sticky z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 shadow-sm flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4">
+<div class="flex items-center gap-md">
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-100 flex items-center justify-center text-on-surface-variant dark:text-outline">
+<span class="material-symbols-outlined" data-icon="settings_ethernet">settings_ethernet</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold tracking-tight text-primary dark:text-primary-fixed-dim">LobbyCast</h1>
+</div>
+<button class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center border-2 border-surface-variant hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="person">person</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-lg flex flex-col gap-lg relative">
+<!-- Scanning Section -->
+<section class="flex flex-col items-center justify-center py-xl relative overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm border border-outline-variant/20">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-surface-container-lowest to-surface-container-lowest"></div>
+<div class="relative w-48 h-48 flex items-center justify-center">
+<!-- Radar Circles -->
+<div class="absolute inset-0 rounded-full border border-primary/20"></div>
+<div class="absolute inset-4 rounded-full border border-primary/30"></div>
+<div class="absolute inset-10 rounded-full border border-primary/40"></div>
+<!-- Radar Sweep -->
+<div class="absolute inset-0 rounded-full border-r-2 border-t-2 border-primary/50 rounded-tr-full radar-sweep origin-center"></div>
+<!-- Center Ping -->
+<div class="absolute w-4 h-4 bg-primary rounded-full z-10 shadow-[0_0_15px_rgba(0,88,188,0.6)]"></div>
+<div class="absolute w-4 h-4 bg-primary rounded-full radar-ping opacity-75"></div>
+</div>
+<div class="mt-lg text-center z-10">
+<h2 class="font-title-md text-title-md text-on-surface">Scanning Local Network</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Looking for active LobbyCast sessions...</p>
+<div class="mt-sm inline-flex items-center gap-xs font-label-caps text-label-caps text-primary bg-primary/10 px-sm py-xs rounded-full">
+<span class="material-symbols-outlined text-[16px]">wifi_tethering</span>
+<span id="scan-timer">00:14</span>
+</div>
+</div>
+</section>
+<!-- Lobbies List -->
+<section class="flex flex-col gap-md">
+<div class="flex justify-between items-end mb-sm">
+<h3 class="font-title-md text-title-md text-on-surface">Nearby Lobbies</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant">3 Found</span>
+</div>
+<!-- Lobby Card 1 -->
+<article class="bg-surface-container-lowest rounded-xl p-md flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-[0px_4px_20px_rgba(0,88,188,0.12)] border border-outline-variant/10 hover:border-primary/30 transition-all group relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+<div class="flex items-center gap-md relative z-10">
+<div class="w-12 h-12 rounded-full border-[3px] border-solid border-outline-variant flex items-center justify-center bg-surface-variant">
+<span class="material-symbols-outlined text-on-surface-variant">dns</span>
+</div>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface">Dev Team Node</h4>
+<div class="flex items-center gap-sm mt-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">group</span> 4 Active
+                            </span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-caps text-label-caps text-primary flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">speed</span> 850 MB/s
+                            </span>
+</div>
+</div>
+</div>
+<div class="relative z-10 flex gap-sm w-full sm:w-auto mt-sm sm:mt-0">
+<button class="flex-1 sm:flex-none rounded-lg bg-surface text-primary border border-primary px-lg py-sm font-label-caps text-label-caps hover:bg-primary/5 transition-colors">Details</button>
+<button class="flex-1 sm:flex-none rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary px-lg py-sm font-label-caps text-label-caps hover:shadow-md transition-all active:scale-95">Request to Join</button>
+</div>
+</article>
+<!-- Lobby Card 2 (High Traffic) -->
+<article class="bg-surface-container-lowest rounded-xl p-md flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-[0px_4px_20px_rgba(0,88,188,0.12)] border border-outline-variant/10 hover:border-primary/30 transition-all group relative overflow-hidden">
+<div class="flex items-center gap-md relative z-10">
+<div class="w-12 h-12 rounded-full border-[3px] border-dashed border-tertiary-fixed-dim animate-[spin_4s_linear_infinite] flex items-center justify-center bg-surface-variant relative">
+<!-- Reverse spin the icon so it stays upright -->
+<span class="material-symbols-outlined text-on-surface-variant absolute animate-[spin_4s_linear_reverse_infinite]">laptop_mac</span>
+</div>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface">Design Assets Sync</h4>
+<div class="flex items-center gap-sm mt-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">group</span> 12 Active
+                            </span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-caps text-label-caps text-tertiary flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">bolt</span> High Traffic
+                            </span>
+</div>
+</div>
+</div>
+<div class="relative z-10 flex gap-sm w-full sm:w-auto mt-sm sm:mt-0">
+<button class="flex-1 sm:flex-none rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary px-lg py-sm font-label-caps text-label-caps hover:shadow-md transition-all active:scale-95">Request to Join</button>
+</div>
+</article>
+<!-- Lobby Card 3 -->
+<article class="bg-surface-container-lowest rounded-xl p-md flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-[0px_4px_20px_rgba(0,88,188,0.12)] border border-outline-variant/10 hover:border-primary/30 transition-all group relative overflow-hidden opacity-70 hover:opacity-100">
+<div class="flex items-center gap-md relative z-10">
+<div class="w-12 h-12 rounded-full border-[3px] border-solid border-outline-variant flex items-center justify-center bg-surface-variant">
+<span class="material-symbols-outlined text-on-surface-variant">folder_shared</span>
+</div>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface">Guest Network Pool</h4>
+<div class="flex items-center gap-sm mt-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">group</span> 1 Active
+                            </span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-[2px]">
+<span class="material-symbols-outlined text-[14px]">lock_open</span> Open
+                            </span>
+</div>
+</div>
+</div>
+<div class="relative z-10 flex gap-sm w-full sm:w-auto mt-sm sm:mt-0">
+<button class="flex-1 sm:flex-none rounded-lg bg-surface-variant text-on-surface-variant px-lg py-sm font-label-caps text-label-caps hover:bg-outline-variant/20 transition-colors">Join Instantly</button>
+</div>
+</article>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface-container/90 backdrop-blur-lg shadow-[0px_-4px_20px_rgba(0,88,188,0.12)] rounded-t-xl border-t border-outline-variant/30">
+<!-- Discover (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1.5 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="radar" style="font-variation-settings: 'FILL' 1;">radar</span>
+<span class="font-label-caps text-label-caps">Discover</span>
+</a>
+<!-- Host -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 px-2 py-1.5" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="sensors">sensors</span>
+<span class="font-label-caps text-label-caps">Host</span>
+</a>
+<!-- Waiting -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 px-2 py-1.5" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="hourglass_empty">hourglass_empty</span>
+<span class="font-label-caps text-label-caps">Waiting</span>
+</a>
+<!-- Transfer -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed active:scale-90 transition-transform duration-200 px-2 py-1.5" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-label-caps text-label-caps">Transfer</span>
+</a>
+</nav>
+<script>
+        // Simple timer animation for the scanning UI
+        const timerElement = document.getElementById('scan-timer');
+        let seconds = 14;
+        
+        setInterval(() => {
+            seconds++;
+            if (seconds > 59) seconds = 0;
+            timerElement.textContent = `00:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    </script>
+</body></html>
