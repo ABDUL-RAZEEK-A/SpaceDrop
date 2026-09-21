@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/preferences/user_preferences.dart';
 import 'home_screen.dart';
 
+import 'package:animated_text_kit/animated_text_kit.dart';
+import '../../core/models/app_theme_type.dart';
+import '../../core/theme/app_theme.dart';
+import '../widgets/space_background_wrapper.dart';
+
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -33,6 +38,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     ref.read(userNameProvider.notifier).setName(name);
+    ref.read(themeProvider.notifier).setPlanet(AppThemeType.pureLight);
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -41,91 +47,91 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tempTheme = AppTheme.buildTheme(AppThemeType.pureLight);
+    final colorScheme = tempTheme.colorScheme;
     
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.primary.withOpacity(0.15),
-                    colorScheme.surface,
-                  ],
-                  stops: const [0.0, 0.4],
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
+    return Theme(
+      data: tempTheme,
+      child: Scaffold(
+        body: SpaceBackgroundWrapper(
+          child: SafeArea(
             child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Icon(
-                      Icons.rocket_launch_rounded,
-                      size: 80,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Welcome to SpaceDrop!',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(
+                        Icons.rocket_launch_rounded,
+                        size: 80,
+                        color: colorScheme.primary,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'What should we call you?',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 32),
+                      AnimatedTextKit(
+                        animatedTexts: [
+                          ColorizeAnimatedText(
+                            'Welcome to BeaconSync!',
+                            textAlign: TextAlign.center,
+                            textStyle: tempTheme.textTheme.headlineMedium!.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            colors: [
+                              colorScheme.primary,
+                              colorScheme.onSurface,
+                              colorScheme.onSurfaceVariant,
+                              colorScheme.primary,
+                            ],
+                          ),
+                        ],
+                        isRepeatingAnimation: true,
+                        repeatForever: true,
                       ),
-                    ),
-                    const SizedBox(height: 48),
-                    TextField(
-                      controller: _nameController,
-                      autofocus: true,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(
-                        labelText: 'Your Name',
-                        prefixIcon: const Icon(Icons.person_outline_rounded),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        filled: true,
-                        fillColor: colorScheme.surface,
-                      ),
-                      onSubmitted: (_) => _saveNameAndContinue(),
-                    ),
-                    const SizedBox(height: 32),
-                    FilledButton(
-                      onPressed: _saveNameAndContinue,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      const SizedBox(height: 16),
+                      Text(
+                        'What should we call you?',
+                        textAlign: TextAlign.center,
+                        style: tempTheme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      child: const Text(
-                        'Get Started',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 32),
+                      TextField(
+                        controller: _nameController,
+                        autofocus: true,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: 'Your Name',
+                          prefixIcon: const Icon(Icons.person_outline_rounded),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          filled: true,
+                          fillColor: colorScheme.surface,
+                        ),
+                        onSubmitted: (_) => _saveNameAndContinue(),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: _saveNameAndContinue,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Get Started',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ],
       ),
     );
   }

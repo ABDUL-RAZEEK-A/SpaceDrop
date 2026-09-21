@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/glass_container.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/history/presentation/providers/history_provider.dart';
 
@@ -25,6 +26,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -33,12 +35,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Transfer History',
-                  style: theme.textTheme.titleLarge,
+                Expanded(
+                  child: Text(
+                    'Transfer History',
+                    style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: Icon(Icons.refresh_rounded, color: colorScheme.onSurface),
                   onPressed: () {
                     ref.read(historyProvider.notifier).loadHistory();
                   },
@@ -55,7 +59,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   Icon(
                     Icons.history_rounded,
                     size: 80,
-                    color: colorScheme.outlineVariant,
+                    color: colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -76,15 +80,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 final isDownload = item.direction == 'DOWNLOAD';
                 final isCompleted = item.status == 'COMPLETED';
 
-                return Card(
-                  elevation: 0,
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
+                return GlassContainer(
+                  padding: EdgeInsets.zero,
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
                     leading: CircleAvatar(
@@ -98,7 +96,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     ),
                     title: Text(
                       item.fileName,
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -110,14 +108,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           children: [
                             Text(
                               '${(item.fileSize / 1024 / 1024).toStringAsFixed(2)} MB',
-                              style: theme.textTheme.labelMedium,
+                              style: theme.textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                             ),
                             const SizedBox(width: 8),
-                            Container(width: 4, height: 4, decoration: BoxDecoration(color: colorScheme.outlineVariant, shape: BoxShape.circle)),
+                            Container(width: 4, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withValues(alpha: 0.3), shape: BoxShape.circle)),
                             const SizedBox(width: 8),
-                            Text(
-                              isDownload ? 'From: ${item.senderName}' : 'To: ${item.senderName}',
-                              style: theme.textTheme.labelMedium,
+                            Expanded(
+                              child: Text(
+                                isDownload ? 'From: ${item.senderName}' : 'To: ${item.senderName}',
+                                style: theme.textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -130,9 +132,16 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         ]
                       ],
                     ),
-                    trailing: Text(
-                      _formatDate(item.completedAt),
-                      style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          _formatDate(item.completedAt),
+                          style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
+                        ),
+                      ],
                     ),
                   ),
                 );

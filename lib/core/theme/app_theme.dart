@@ -1,51 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
+
+import '../models/app_theme_type.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  static ThemeData buildTheme(AppThemeType theme) {
+    final primaryColor = theme.primaryColor;
+    final fontFamily = theme.fontFamily;
+    
+    // Pure Light color scheme
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: primaryColor,
+      brightness: Brightness.light,
+      surface: Colors.white,
+      onSurface: const Color(0xFF111827), // Deep charcoal
+      primary: primaryColor,
+      onPrimary: Colors.white,
+      secondary: const Color(0xFF6B7280), // Medium gray
+      onSecondary: Colors.white,
+      surfaceContainerHighest: const Color(0xFFF3F4F6), // Soft gray for containers
+      onSurfaceVariant: const Color(0xFF4B5563),
+      outline: const Color(0xFFE5E7EB), // Very subtle borders
+      outlineVariant: const Color(0xFFD1D5DB),
+    );
+
     return ThemeData(
-      colorScheme: const ColorScheme(
-        brightness: Brightness.light,
-        primary: AppColors.primary,
-        onPrimary: AppColors.onPrimary,
-        primaryContainer: AppColors.primaryContainer,
-        onPrimaryContainer: AppColors.onPrimaryContainer,
-        secondary: AppColors.secondary,
-        onSecondary: AppColors.onSecondary,
-        secondaryContainer: AppColors.secondaryContainer,
-        onSecondaryContainer: AppColors.onSecondaryContainer,
-        tertiary: AppColors.tertiary,
-        onTertiary: AppColors.onTertiary,
-        tertiaryContainer: AppColors.tertiaryContainer,
-        onTertiaryContainer: AppColors.onTertiaryContainer,
-        error: AppColors.error,
-        onError: AppColors.onError,
-        errorContainer: AppColors.errorContainer,
-        onErrorContainer: AppColors.onErrorContainer,
-        surface: AppColors.surface,
-        onSurface: AppColors.onSurface,
-        surfaceContainerHighest: AppColors.surfaceContainerHighest,
-        onSurfaceVariant: AppColors.onSurfaceVariant,
-        outline: AppColors.outline,
-        outlineVariant: AppColors.outlineVariant,
-        inverseSurface: AppColors.inverseSurface,
-        onInverseSurface: AppColors.inverseOnSurface,
-        inversePrimary: AppColors.inversePrimary,
-        scrim: Colors.black,
-        shadow: Colors.black,
-      ),
+      colorScheme: colorScheme,
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.background,
-      textTheme: _buildTextTheme(),
+      scaffoldBackgroundColor: Colors.transparent, // Let SpaceBackground show through
+      textTheme: _buildTextTheme(colorScheme, fontFamily),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.surface.withValues(alpha: 0.8),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.onSurfaceVariant),
-        titleTextStyle: GoogleFonts.inter(
-          color: AppColors.primary,
-          fontSize: 24,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
+        titleTextStyle: GoogleFonts.getFont(
+          fontFamily,
+          color: const Color.fromRGBO(68, 0, 170, 1),
+          fontSize: 22,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.01,
         ),
@@ -53,13 +45,14 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
+          backgroundColor: const Color.fromRGBO(199, 70, 237, 1),
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.getFont(
+            fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -67,13 +60,15 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1),
+          foregroundColor: colorScheme.onSurface,
+          side: BorderSide(color: colorScheme.outline, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.getFont(
+            fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -81,99 +76,132 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        shadowColor: AppColors.primary.withValues(alpha: 0.12),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.3)),
         ),
-        color: AppColors.surfaceContainerLowest,
+        color: const Color.fromRGBO(240, 230, 255, 1), // Very light soft purple
         margin: EdgeInsets.zero,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color.fromRGBO(215, 195, 245, 1), // Distinct purple base matching theme
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.2),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return GoogleFonts.getFont(fontFamily, color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12);
+          }
+          return GoogleFonts.getFont(fontFamily, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500, fontSize: 12);
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: colorScheme.primary);
+          }
+          return IconThemeData(color: colorScheme.onSurfaceVariant);
+        }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceContainerLowest,
+        fillColor: const Color.fromRGBO(199, 70, 237, 0.1), // 10% opacity for text box background
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color.fromRGBO(199, 70, 237, 1), width: 2),
         ),
-        labelStyle: GoogleFonts.inter(color: AppColors.onSurfaceVariant),
-        hintStyle: GoogleFonts.inter(color: AppColors.outlineVariant),
+        labelStyle: GoogleFonts.getFont(fontFamily, color: colorScheme.onSurfaceVariant),
+        hintStyle: GoogleFonts.getFont(fontFamily, color: colorScheme.outlineVariant),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceContainerLowest,
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+          borderRadius: BorderRadius.circular(24),
         ),
-        elevation: 24,
+        elevation: 10,
+        shadowColor: Colors.black.withValues(alpha: 0.05),
+      ),
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outline.withValues(alpha: 0.5),
+        thickness: 1,
+        space: 1,
+      ),
+      iconTheme: IconThemeData(
+        color: colorScheme.onSurface,
       ),
     );
   }
 
-  static TextTheme _buildTextTheme() {
+  static TextTheme _buildTextTheme(ColorScheme colorScheme, String fontFamily) {
+    const headingColor = Color.fromRGBO(68, 0, 170, 1);
+    const subHeadingColor = Color.fromRGBO(196, 144, 253, 1);
+
     return TextTheme(
-      displayLarge: GoogleFonts.inter(
+      displayLarge: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 48,
         fontWeight: FontWeight.w700,
         height: 56 / 48,
         letterSpacing: -0.02,
-        color: AppColors.onSurface,
+        color: headingColor,
       ),
-      headlineLarge: GoogleFonts.inter(
+      headlineLarge: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 32,
         fontWeight: FontWeight.w600,
         height: 40 / 32,
         letterSpacing: -0.01,
-        color: AppColors.onSurface,
+        color: headingColor,
       ),
-      titleLarge: GoogleFonts.inter( // Equivalent to headline-lg-mobile / title-md
+      titleLarge: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 24,
         fontWeight: FontWeight.w600,
         height: 32 / 24,
-        color: AppColors.onSurface,
+        color: headingColor,
       ),
-      titleMedium: GoogleFonts.inter( // Equivalent to title-md
-        fontSize: 20,
+      titleMedium: GoogleFonts.getFont(
+        fontFamily,
+        fontSize: 18,
         fontWeight: FontWeight.w600,
         height: 28 / 20,
-        color: AppColors.onSurface,
+        color: headingColor,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 16,
         fontWeight: FontWeight.w400,
         height: 24 / 16,
-        color: AppColors.onSurface,
+        color: headingColor, // Default body text, but can be headingColor for consistency
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 14,
         fontWeight: FontWeight.w400,
         height: 20 / 14,
-        color: AppColors.onSurface,
+        color: subHeadingColor,
       ),
-      labelLarge: GoogleFonts.jetBrainsMono( // Equivalent to label-caps
+      labelLarge: GoogleFonts.getFont(
+        fontFamily,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        height: 20 / 14,
+        color: headingColor,
+      ),
+      labelSmall: GoogleFonts.getFont(
+        fontFamily,
         fontSize: 12,
         fontWeight: FontWeight.w500,
         height: 16 / 12,
-        letterSpacing: 0.05,
-        color: AppColors.onSurfaceVariant,
-      ),
-      labelSmall: GoogleFonts.jetBrainsMono( // Equivalent to status-code
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        height: 18 / 13,
-        color: AppColors.onSurfaceVariant,
+        color: subHeadingColor,
       ),
     );
   }

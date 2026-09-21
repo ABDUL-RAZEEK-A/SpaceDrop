@@ -10,17 +10,25 @@ import '../../../../core/models/join_request.dart';
 import '../../../../features/discovery/domain/discovery_service.dart';
 import '../../../../core/network/tcp_server.dart';
 import 'package:crypto/crypto.dart';
+import 'active_lobbies_provider.dart';
 
 enum FileSortType { name, size, category }
 
-final hostProvider = StateNotifierProvider<HostNotifier, HostState>((ref) {
-  return HostNotifier();
+class ClientEndpoint {
+  final InternetAddress address;
+  final int port;
+  ClientEndpoint(this.address, this.port);
+}
+
+final hostProvider = StateNotifierProvider.family<HostNotifier, HostState, String>((ref, lobbyId) {
+  return HostNotifier(lobbyId, ref);
 });
 
 class HostState {
   final Lobby? currentLobby;
   final List<Participant> participants;
   final List<JoinRequest> pendingRequests;
+  final List<JoinRequest> coHostRequests;
   final List<SharedFile> sharedFiles;
   final bool isHosting;
   final String searchQuery;
@@ -30,6 +38,7 @@ class HostState {
     this.currentLobby,
     this.participants = const [],
     this.pendingRequests = const [],
+    this.coHostRequests = const [],
     this.sharedFiles = const [],
     this.isHosting = false,
     this.searchQuery = '',
@@ -40,6 +49,7 @@ class HostState {
     Lobby? currentLobby,
     List<Participant>? participants,
     List<JoinRequest>? pendingRequests,
+    List<JoinRequest>? coHostRequests,
     List<SharedFile>? sharedFiles,
     bool? isHosting,
     String? searchQuery,
@@ -49,6 +59,7 @@ class HostState {
       currentLobby: currentLobby ?? this.currentLobby,
       participants: participants ?? this.participants,
       pendingRequests: pendingRequests ?? this.pendingRequests,
+      coHostRequests: coHostRequests ?? this.coHostRequests,
       sharedFiles: sharedFiles ?? this.sharedFiles,
       isHosting: isHosting ?? this.isHosting,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -78,13 +89,15 @@ class HostState {
 }
 
 class HostNotifier extends StateNotifier<HostState> {
-  HostNotifier() : super(HostState());
+  final String lobbyId;
+  final Ref ref;
+  HostNotifier(this.lobbyId, this.ref) : super(HostState());
 
   final DiscoveryService _discoveryService = DiscoveryService();
-  final TcpServer _tcpServer = TcpServer();
+  final TcpServer _quicServer = TcpServer();
   final _uuid = const Uuid();
   
-  final Map<String, Socket> _deviceSockets = {};
+  final Map<String, ClientEndpoint> _deviceEndpoints = {};
 
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
@@ -94,11 +107,10 @@ class HostNotifier extends StateNotifier<HostState> {
     state = state.copyWith(sortType: sortType);
   }
 
-  Future<void> createLobby(String lobbyName, String hostName, String lobbyType, bool pinEnabled, String? pin, int maxParticipants) async {
+  Future<void> createLobby(String lobbyName, String hostName, String lobbyType, bool pinEnabled, String? pin, int maxParticipants, bool requireManualApproval) async {
     try {
-      await _tcpServer.startServers();
+      await _quicServer.startServers();
 
-      final lobbyId = 'LND-${_uuid.v4().substring(0, 5).toUpperCase()}';
       final hostDeviceId = _uuid.v4();
 
       final lobby = Lobby(
@@ -107,22 +119,23 @@ class HostNotifier extends StateNotifier<HostState> {
         hostDeviceId: hostDeviceId,
         hostDeviceName: hostName,
         hostIp: await _getLocalIpAddress(),
-        port: _tcpServer.tcpPort,
+        port: _quicServer.port,
         createdAt: DateTime.now().millisecondsSinceEpoch,
         status: 'ACTIVE',
         maxParticipants: maxParticipants,
         lobbyType: lobbyType,
         pinEnabled: pinEnabled,
-        pin: pin,
+        pin: pinEnabled ? pin : null,
+        requireManualApproval: requireManualApproval,
       );
 
       await _discoveryService.advertiseLobby(lobby);
 
-      _tcpServer.onMessageReceived = _handleClientMessage;
-      _tcpServer.onFileRequested = _handleFileRequested;
-      _tcpServer.onTokenValidated = _validateSessionToken;
-      _tcpServer.onUploadRequested = _validateUploadToken;
-      _tcpServer.onFileUploaded = addSharedFile;
+      _quicServer.onMessageReceived = _handleClientMessage;
+      _quicServer.onFileRequested = _handleFileRequested;
+      _quicServer.onTokenValidated = _validateSessionToken;
+      _quicServer.onUploadRequested = _validateUploadToken;
+      _quicServer.onFileUploaded = addSharedFile;
 
       state = state.copyWith(currentLobby: lobby, isHosting: true);
     } catch (e) {
@@ -146,6 +159,7 @@ class HostNotifier extends StateNotifier<HostState> {
         lobbyType: state.currentLobby!.lobbyType,
         pinEnabled: state.currentLobby!.pinEnabled,
         pin: state.currentLobby!.pin,
+        requireManualApproval: state.currentLobby!.requireManualApproval,
       );
       state = state.copyWith(currentLobby: updatedLobby);
       _discoveryService.advertiseLobby(updatedLobby);
@@ -164,6 +178,7 @@ class HostNotifier extends StateNotifier<HostState> {
 
   bool _validateSessionToken(String? token) {
     if (token == null) return false;
+    if (state.currentLobby?.isPaused == true) return false;
     return state.participants.any((p) => p.sessionToken == token);
   }
 
@@ -175,46 +190,91 @@ class HostNotifier extends StateNotifier<HostState> {
     return participant.permission == 'CO_HOST' || participant.permission == 'HOST';
   }
 
-  void _handleClientMessage(Socket client, Map<String, dynamic> message) {
+  void _handleClientMessage(Map<String, dynamic> message, InternetAddress address, int port) {
     final command = message['command'];
     if (command == 'join_request') {
       final deviceId = message['deviceId'];
 
+      if (state.currentLobby?.isPaused == true) {
+        _quicServer.sendMessage(address, port, {'command': 'join_rejected', 'reason': 'Lobby is paused'});
+        return;
+      }
+
       if (state.currentLobby != null && state.participants.length >= state.currentLobby!.maxParticipants) {
-        _tcpServer.sendMessage(client, {'command': 'join_rejected', 'reason': 'Lobby is full'});
+        _quicServer.sendMessage(address, port, {'command': 'join_rejected', 'reason': 'Lobby is full'});
         return;
       }
       
       if (state.currentLobby?.pinEnabled == true) {
         final pin = message['pin'];
         if (pin != state.currentLobby?.pin) {
-          _tcpServer.sendMessage(client, {'command': 'join_rejected', 'reason': 'Invalid PIN'});
+          _quicServer.sendMessage(address, port, {'command': 'join_rejected', 'reason': 'Invalid PIN'});
           return;
         }
       }
 
-      _deviceSockets[deviceId] = client;
+      _deviceEndpoints[deviceId] = ClientEndpoint(address, port);
       
-      final request = JoinRequest(
-        requestId: _uuid.v4(),
-        lobbyId: state.currentLobby!.lobbyId,
-        deviceId: deviceId,
-        deviceName: message['deviceName'],
-        status: 'PENDING',
-        requestedAt: DateTime.now().millisecondsSinceEpoch,
-      );
-      state = state.copyWith(
-        pendingRequests: [...state.pendingRequests, request],
-      );
-      _broadcastPendingRequests();
+      if (state.currentLobby?.requireManualApproval == false) {
+        // Auto-approve
+        final participant = Participant(
+          participantId: _uuid.v4(),
+          deviceId: deviceId,
+          deviceName: message['deviceName'],
+          lobbyId: state.currentLobby!.lobbyId,
+          status: 'CONNECTED',
+          joinedAt: DateTime.now().millisecondsSinceEpoch,
+          permission: 'VIEWER',
+          sessionToken: _uuid.v4(),
+        );
+        state = state.copyWith(
+          participants: [...state.participants, participant],
+        );
+        _quicServer.sendMessage(address, port, {
+          'command': 'join_approved',
+          'participantId': participant.participantId,
+          'sessionToken': participant.sessionToken,
+        });
+        state = state.copyWith(
+          currentLobby: state.currentLobby?.copyWith(currentParticipants: state.participants.length),
+        );
+      } else {
+        final request = JoinRequest(
+          requestId: _uuid.v4(),
+          lobbyId: state.currentLobby!.lobbyId,
+          deviceId: deviceId,
+          deviceName: message['deviceName'],
+          status: 'PENDING',
+          requestedAt: DateTime.now().millisecondsSinceEpoch,
+        );
+        state = state.copyWith(
+          pendingRequests: [...state.pendingRequests, request],
+        );
+        _broadcastPendingRequests();
+      }
     } else {
       // Co-host commands handling
       final participant = state.participants.firstWhere(
-        (p) => _deviceSockets[p.deviceId] == client, 
+        (p) {
+           final ep = _deviceEndpoints[p.deviceId];
+           return ep?.address == address && ep?.port == port;
+        },
         orElse: () => Participant(participantId: '', deviceId: '', deviceName: '', lobbyId: '', status: '', joinedAt: 0, permission: 'VIEWER')
       );
 
-      if (participant.permission == 'CO_HOST') {
+      if (command == 'request_cohost') {
+        if (participant.participantId.isNotEmpty && participant.permission == 'VIEWER') {
+          final request = JoinRequest(
+            requestId: _uuid.v4(),
+            lobbyId: state.currentLobby!.lobbyId,
+            deviceId: participant.deviceId,
+            deviceName: participant.deviceName,
+            status: 'PENDING',
+            requestedAt: DateTime.now().millisecondsSinceEpoch,
+          );
+          state = state.copyWith(coHostRequests: [...state.coHostRequests, request]);
+        }
+      } else if (participant.permission == 'CO_HOST') {
         if (command == 'remove_file') {
           final fileId = message['fileId'];
           _removeFileInternal(fileId);
@@ -226,6 +286,14 @@ class HostNotifier extends StateNotifier<HostState> {
           final requestId = message['requestId'];
           final request = state.pendingRequests.firstWhere((r) => r.requestId == requestId, orElse: () => JoinRequest(requestId: '', lobbyId: '', deviceId: '', deviceName: '', status: '', requestedAt: 0));
           if (request.requestId.isNotEmpty) rejectRequest(request);
+        } else if (command == 'pause_lobby') {
+          if (state.currentLobby?.isPaused == false) {
+             togglePauseLobby();
+          }
+        } else if (command == 'unpause_lobby') {
+          if (state.currentLobby?.isPaused == true) {
+             togglePauseLobby();
+          }
         }
       }
     }
@@ -236,7 +304,7 @@ class HostNotifier extends StateNotifier<HostState> {
         .where((r) => r.requestId != request.requestId)
         .toList();
 
-    final socket = _deviceSockets[request.deviceId];
+    final endpoint = _deviceEndpoints[request.deviceId];
 
     final sessionToken = _uuid.v4();
 
@@ -257,13 +325,13 @@ class HostNotifier extends StateNotifier<HostState> {
     );
     _broadcastPendingRequests();
 
-    if (socket != null) {
-      _tcpServer.sendMessage(socket, {
+    if (endpoint != null) {
+      _quicServer.sendMessage(endpoint.address, endpoint.port, {
         'command': 'join_approved',
-        'httpPort': _tcpServer.httpPort,
+        'httpPort': _quicServer.port,
         'sessionToken': sessionToken,
       });
-      _sendFileListToClient(socket);
+      _sendFileListToClient(endpoint);
     }
   }
 
@@ -274,9 +342,9 @@ class HostNotifier extends StateNotifier<HostState> {
     state = state.copyWith(pendingRequests: updatedRequests);
     _broadcastPendingRequests();
 
-    final socket = _deviceSockets[request.deviceId];
-    if (socket != null) {
-      _tcpServer.sendMessage(socket, {'command': 'join_rejected'});
+    final endpoint = _deviceEndpoints[request.deviceId];
+    if (endpoint != null) {
+      _quicServer.sendMessage(endpoint.address, endpoint.port, {'command': 'join_rejected'});
     }
   }
 
@@ -289,11 +357,62 @@ class HostNotifier extends StateNotifier<HostState> {
     }).toList();
     state = state.copyWith(participants: updatedParticipants);
 
-    final socket = _deviceSockets[deviceId];
-    if (socket != null) {
-      _tcpServer.sendMessage(socket, {'command': 'promote_cohost'});
+    final endpoint = _deviceEndpoints[deviceId];
+    if (endpoint != null) {
+      _quicServer.sendMessage(endpoint.address, endpoint.port, {'command': 'promote_cohost'});
       // Send them the current pending requests since they are now a co-host
-      _sendPendingRequestsToClient(socket);
+      _sendPendingRequestsToClient(endpoint);
+    }
+  }
+
+  void approveCoHostRequest(JoinRequest request) {
+    final updatedRequests = state.coHostRequests
+        .where((r) => r.requestId != request.requestId)
+        .toList();
+    state = state.copyWith(coHostRequests: updatedRequests);
+    promoteToCoHost(request.deviceId);
+  }
+
+  void rejectCoHostRequest(JoinRequest request) {
+    final updatedRequests = state.coHostRequests
+        .where((r) => r.requestId != request.requestId)
+        .toList();
+    state = state.copyWith(coHostRequests: updatedRequests);
+  }
+
+  void togglePauseLobby() {
+    if (state.currentLobby != null) {
+      final updatedLobby = Lobby(
+        lobbyId: state.currentLobby!.lobbyId,
+        lobbyName: state.currentLobby!.lobbyName,
+        hostDeviceId: state.currentLobby!.hostDeviceId,
+        hostDeviceName: state.currentLobby!.hostDeviceName,
+        hostIp: state.currentLobby!.hostIp,
+        port: state.currentLobby!.port,
+        createdAt: state.currentLobby!.createdAt,
+        status: state.currentLobby!.status,
+        maxParticipants: state.currentLobby!.maxParticipants,
+        currentParticipants: state.currentLobby!.currentParticipants,
+        lobbyType: state.currentLobby!.lobbyType,
+        pinEnabled: state.currentLobby!.pinEnabled,
+        pin: state.currentLobby!.pin,
+        isPaused: !state.currentLobby!.isPaused,
+      );
+      state = state.copyWith(currentLobby: updatedLobby);
+      _discoveryService.advertiseLobby(updatedLobby);
+      _broadcastLobbyState(updatedLobby.isPaused);
+    }
+  }
+
+  void _broadcastLobbyState(bool isPaused) {
+    for (var device in state.participants) {
+      final endpoint = _deviceEndpoints[device.deviceId];
+      if (endpoint != null) {
+        _quicServer.sendMessage(endpoint.address, endpoint.port, {
+          'command': 'lobby_state_update',
+          'isPaused': isPaused,
+        });
+      }
     }
   }
 
@@ -301,30 +420,39 @@ class HostNotifier extends StateNotifier<HostState> {
     final updatedParticipants = state.participants.where((p) => p.deviceId != deviceId).toList();
     state = state.copyWith(participants: updatedParticipants);
     
-    final socket = _deviceSockets[deviceId];
-    if (socket != null) {
-      _tcpServer.sendMessage(socket, {'command': 'join_rejected', 'reason': 'Kicked by host'});
-      socket.destroy();
-      _deviceSockets.remove(deviceId);
+    final endpoint = _deviceEndpoints[deviceId];
+    if (endpoint != null) {
+      _quicServer.sendMessage(endpoint.address, endpoint.port, {'command': 'join_rejected', 'reason': 'Kicked by host'});
+      _deviceEndpoints.remove(deviceId);
     }
   }
 
   Future<void> addSharedFile(File file) async {
-    final bytes = await file.readAsBytes();
-    final hash = sha256.convert(bytes).toString();
+    try {
+      final isDir = await FileSystemEntity.isDirectory(file.path);
+      if (isDir) {
+        print('Skipping directory: ${file.path}');
+        return;
+      }
+      
+      final digest = await sha256.bind(file.openRead()).first;
+      final hash = digest.toString();
 
-    final sharedFile = SharedFile(
-      fileId: _uuid.v4(),
-      fileName: p.basename(file.path),
-      filePath: file.path,
-      fileSize: await file.length(),
-      fileType: 'application/octet-stream',
-      checksum: hash,
-      uploadedAt: DateTime.now().millisecondsSinceEpoch,
-    );
+      final sharedFile = SharedFile(
+        fileId: _uuid.v4(),
+        fileName: p.basename(file.path),
+        filePath: file.path,
+        fileSize: await file.length(),
+        fileType: 'application/octet-stream',
+        checksum: hash,
+        uploadedAt: DateTime.now().millisecondsSinceEpoch,
+      );
 
-    state = state.copyWith(sharedFiles: [...state.sharedFiles, sharedFile]);
-    _broadcastFileList();
+      state = state.copyWith(sharedFiles: [...state.sharedFiles, sharedFile]);
+      _broadcastFileList();
+    } catch (e) {
+      print('Error adding shared file: $e');
+    }
   }
 
   void removeFile(String fileId) {
@@ -337,7 +465,7 @@ class HostNotifier extends StateNotifier<HostState> {
     _broadcastFileList();
   }
 
-  void _sendFileListToClient(Socket socket) {
+  void _sendFileListToClient(ClientEndpoint endpoint) {
     if (state.currentLobby == null) return;
     
     final fileData = state.sharedFiles.map((f) => {
@@ -348,7 +476,7 @@ class HostNotifier extends StateNotifier<HostState> {
       'checksum': f.checksum,
     }).toList();
     
-    _tcpServer.sendMessage(socket, {
+    _quicServer.sendMessage(endpoint.address, endpoint.port, {
       'command': 'file_list_update',
       'files': fileData,
     });
@@ -366,9 +494,9 @@ class HostNotifier extends StateNotifier<HostState> {
     }).toList();
     
     for (var device in state.participants) {
-      final socket = _deviceSockets[device.deviceId];
-      if (socket != null) {
-        _tcpServer.sendMessage(socket, {
+      final endpoint = _deviceEndpoints[device.deviceId];
+      if (endpoint != null) {
+        _quicServer.sendMessage(endpoint.address, endpoint.port, {
           'command': 'file_list_update',
           'files': fileData,
         });
@@ -385,22 +513,22 @@ class HostNotifier extends StateNotifier<HostState> {
 
     for (var device in state.participants) {
       if (device.permission == 'CO_HOST') {
-        final socket = _deviceSockets[device.deviceId];
-        if (socket != null) {
-          _sendPendingRequestsToClient(socket, requestData);
+        final endpoint = _deviceEndpoints[device.deviceId];
+        if (endpoint != null) {
+          _sendPendingRequestsToClient(endpoint, requestData);
         }
       }
     }
   }
 
-  void _sendPendingRequestsToClient(Socket socket, [List<Map<String, dynamic>>? requestData]) {
+  void _sendPendingRequestsToClient(ClientEndpoint endpoint, [List<Map<String, dynamic>>? requestData]) {
     final data = requestData ?? state.pendingRequests.map((r) => {
       'requestId': r.requestId,
       'deviceId': r.deviceId,
       'deviceName': r.deviceName,
     }).toList();
 
-    _tcpServer.sendMessage(socket, {
+    _quicServer.sendMessage(endpoint.address, endpoint.port, {
       'command': 'pending_requests_update',
       'requests': data,
     });
@@ -408,8 +536,9 @@ class HostNotifier extends StateNotifier<HostState> {
 
   Future<void> closeLobby() async {
     await _discoveryService.stopAdvertising();
-    _tcpServer.stopServers();
-    _deviceSockets.clear();
+    _quicServer.stopServers();
+    _deviceEndpoints.clear();
+    ref.read(activeLobbiesProvider.notifier).removeLobby(lobbyId);
     state = HostState();
   }
 

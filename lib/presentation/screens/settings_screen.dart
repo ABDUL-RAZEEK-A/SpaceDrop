@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/glass_container.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/preferences/user_preferences.dart';
@@ -29,11 +31,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _pickProfileImage() async {
-    FilePickerResult? result = await FilePicker.pickFiles(
+    final result = await FilePicker.pickFile(
       type: FileType.image,
     );
-    if (result != null && result.files.single.path != null) {
-      ref.read(settingsProvider.notifier).updateProfileImage(result.files.single.path!);
+    if (result != null && result.path != null) {
+      ref.read(settingsProvider.notifier).updateProfileImage(result.path!);
     }
   }
 
@@ -51,6 +53,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: ListView(
         padding: const EdgeInsets.all(24.0),
         children: [
@@ -58,105 +61,132 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: const EdgeInsets.only(bottom: 24.0),
             child: Text(
               'Settings',
-              style: theme.textTheme.titleLarge,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          // Profile Section
-          Center(
-            child: Stack(
+          
+          GlassContainer(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  backgroundImage: settings.profileImagePath != null
-                      ? FileImage(File(settings.profileImagePath!))
-                      : null,
-                  child: settings.profileImagePath == null
-                      ? Icon(Icons.person_rounded, size: 50, color: colorScheme.onSurfaceVariant)
-                      : null,
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.camera_alt_rounded, size: 20, color: Colors.white),
-                      onPressed: _pickProfileImage,
-                    ),
+                // Profile Section
+                Center(
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        backgroundImage: settings.profileImagePath != null
+                            ? FileImage(File(settings.profileImagePath!))
+                            : null,
+                        child: settings.profileImagePath == null
+                            ? Icon(Icons.person_rounded, size: 50, color: colorScheme.onSurface)
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: Icon(Icons.camera_alt_rounded, size: 20, color: colorScheme.onPrimary),
+                            onPressed: _pickProfileImage,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 32),
+
+                // User Name
+                Text('Profile Details', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _nameController,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.onSurfaceVariant),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.primary),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    ref.read(userNameProvider.notifier).setName(value);
+                  },
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
-          const SizedBox(height: 32),
-
-          // User Name
-          Text('Profile Details', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.primary)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              labelText: 'Username',
-              prefixIcon: const Icon(Icons.person_outline_rounded),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onChanged: (value) {
-              ref.read(userNameProvider.notifier).setName(value);
-            },
-          ),
-          const SizedBox(height: 32),
-
-          // Storage Section
-          Text('Storage & Downloads', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.primary)),
-          const SizedBox(height: 16),
           
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Download Location'),
-            subtitle: Text(settings.downloadDirectory),
-            trailing: FilledButton.tonal(
-              onPressed: _pickDownloadDirectory,
-              child: const Text('Change'),
+          const SizedBox(height: 24),
+          
+          GlassContainer(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Storage & Downloads', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Download Location', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+                  subtitle: Text(settings.downloadDirectory, style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                  trailing: FilledButton.tonal(
+                    onPressed: _pickDownloadDirectory,
+                    child: const Text('Change'),
+                  ),
+                ),
+
+              ],
             ),
           ),
-          const SizedBox(height: 16),
           
-          Card(
-            elevation: 0,
-            color: colorScheme.surfaceContainerLowest,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.storage_rounded, color: colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text('System Storage', style: theme.textTheme.titleMedium),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Dummy visualization since actual disk space requires native plugins
-                  LinearProgressIndicator(
-                    value: 0.6,
-                    backgroundColor: colorScheme.surfaceContainerHighest,
-                    color: colorScheme.primary,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('~ 60% Used on current drive', style: theme.textTheme.labelMedium),
-                ],
-              ),
+          const SizedBox(height: 24),
+          
+          GlassContainer(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('About BeaconSync', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.info_outline_rounded, color: colorScheme.primary),
+                  title: Text('Version', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+                  trailing: Text('1.0.0 (Alpha)', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.network_check_rounded, color: colorScheme.primary),
+                  title: Text('Network Protocol', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+                  trailing: Text('BeaconSync TCP (Direct)', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.security_rounded, color: colorScheme.primary),
+                  title: Text('Encryption', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
+                  trailing: Text('Local E2E (AES-GCM)', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                ),
+              ],
             ),
           ),
         ],

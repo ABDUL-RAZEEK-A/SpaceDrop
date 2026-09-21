@@ -12,6 +12,8 @@ class Lobby {
   final String lobbyType; // 'Open' or 'Private'
   final bool pinEnabled;
   final String? pin;
+  final bool isPaused;
+  final bool requireManualApproval;
 
   Lobby({
     required this.lobbyId,
@@ -27,7 +29,45 @@ class Lobby {
     this.lobbyType = 'Open',
     this.pinEnabled = false,
     this.pin,
+    this.isPaused = false,
+    this.requireManualApproval = true,
   });
+
+  Lobby copyWith({
+    String? lobbyId,
+    String? lobbyName,
+    String? hostDeviceId,
+    String? hostDeviceName,
+    String? hostIp,
+    int? port,
+    int? createdAt,
+    String? status,
+    int? maxParticipants,
+    int? currentParticipants,
+    String? lobbyType,
+    bool? pinEnabled,
+    String? pin,
+    bool? isPaused,
+    bool? requireManualApproval,
+  }) {
+    return Lobby(
+      lobbyId: lobbyId ?? this.lobbyId,
+      lobbyName: lobbyName ?? this.lobbyName,
+      hostDeviceId: hostDeviceId ?? this.hostDeviceId,
+      hostDeviceName: hostDeviceName ?? this.hostDeviceName,
+      hostIp: hostIp ?? this.hostIp,
+      port: port ?? this.port,
+      createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+      maxParticipants: maxParticipants ?? this.maxParticipants,
+      currentParticipants: currentParticipants ?? this.currentParticipants,
+      lobbyType: lobbyType ?? this.lobbyType,
+      pinEnabled: pinEnabled ?? this.pinEnabled,
+      pin: pin ?? this.pin,
+      isPaused: isPaused ?? this.isPaused,
+      requireManualApproval: requireManualApproval ?? this.requireManualApproval,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -44,6 +84,8 @@ class Lobby {
       'lobbyType': lobbyType,
       'pinEnabled': pinEnabled,
       if (pin != null) 'pin': pin,
+      'isPaused': isPaused,
+      'requireManualApproval': requireManualApproval,
     };
   }
 
@@ -62,6 +104,8 @@ class Lobby {
       lobbyType: map['lobbyType'] ?? 'Open',
       pinEnabled: map['pinEnabled'] ?? false,
       pin: map['pin'],
+      isPaused: map['isPaused'] ?? false,
+      requireManualApproval: map['requireManualApproval'] ?? true,
     );
   }
 }

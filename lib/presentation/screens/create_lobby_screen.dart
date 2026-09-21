@@ -1,9 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../widgets/glass_container.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/preferences/user_preferences.dart';
+import 'package:uuid/uuid.dart';
 import '../../features/lobby/presentation/providers/host_provider.dart';
+import '../../features/lobby/presentation/providers/active_lobbies_provider.dart';
+import '../../core/models/app_theme_type.dart';
 import 'host_lobby_screen.dart';
 
 class CreateLobbyScreen extends ConsumerStatefulWidget {
@@ -18,9 +22,10 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
   final _hostNameController = TextEditingController();
   final _pinController = TextEditingController();
   bool _isPrivate = false;
+  bool _requireManualApproval = true;
   bool _isLoading = false;
   int _maxParticipants = 10;
-  List<File> _selectedFiles = [];
+  final List<File> _selectedFiles = [];
 
   @override
   void initState() {
@@ -42,10 +47,10 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
   }
 
   Future<void> _pickFiles() async {
-    final result = await FilePicker.pickFiles(allowMultiple: true);
-    if (result != null) {
+    final result = await FilePicker.pickFiles();
+    if (result.isNotEmpty) {
       setState(() {
-        for (final file in result.files) {
+        for (final file in result) {
           if (file.path != null) {
             _selectedFiles.add(File(file.path!));
           }
@@ -71,9 +76,14 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
     }
 
     setState(() => _isLoading = true);
+    
+    // Save the host name to preferences so it persists in settings
+    ref.read(userNameProvider.notifier).setName(_hostNameController.text.trim());
+
+    final lobbyId = 'LND-${const Uuid().v4().substring(0, 5).toUpperCase()}';
 
     await ref
-        .read(hostProvider.notifier)
+        .read(hostProvider(lobbyId).notifier)
         .createLobby(
           _lobbyNameController.text.trim(),
           _hostNameController.text.trim(),
@@ -81,51 +91,35 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
           _isPrivate,
           _isPrivate ? _pinController.text.trim() : null,
           _maxParticipants,
+          _requireManualApproval,
         );
 
     // Add pre-selected files after lobby creation
     for (final file in _selectedFiles) {
-      await ref.read(hostProvider.notifier).addSharedFile(file);
+      await ref.read(hostProvider(lobbyId).notifier).addSharedFile(file);
     }
+    
+    // Clear files so they don't persist if we close and recreate a lobby
+    _selectedFiles.clear();
 
     if (mounted) {
       setState(() => _isLoading = false);
+      ref.read(activeLobbiesProvider.notifier).addLobby(lobbyId);
+      Navigator.push(context, MaterialPageRoute(builder: (_) => HostLobbyScreen(lobbyId: lobbyId)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final hostState = ref.watch(hostProvider);
-    if (hostState.isHosting) {
-      return const HostLobbyScreen();
-    }
 
     final userName = ref.watch(userNameProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // Background Gradient for Host Mode (Deep Indigo/Primary)
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.primary.withValues(alpha: 0.15),
-                    colorScheme.surface,
-                  ],
-                  stops: const [0.0, 0.4],
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Center(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
@@ -140,19 +134,13 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
                         ),
                       ),
                     ),
-                    Card(
-                      color: colorScheme.surfaceContainerLowest,
-                      shadowColor: colorScheme.primary.withValues(alpha: 0.12),
-                      elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
+                    GlassContainer(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           width: 80,
@@ -173,39 +161,59 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
                         Text(
                           'Host a Local Space',
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.headlineLarge,
+                          style: theme.textTheme.headlineLarge?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Share files securely on your network.',
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 48),
                         TextField(
                           controller: _lobbyNameController,
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: colorScheme.onSurface),
+                          decoration: InputDecoration(
                             labelText: 'Lobby Name',
+                            labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                             hintText: 'e.g., Design Sync',
-                            prefixIcon: Icon(Icons.meeting_room_rounded),
+                            hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                            prefixIcon: Icon(Icons.meeting_room_rounded, color: colorScheme.onSurfaceVariant),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colorScheme.primary),
+                            ),
                           ),
                           textCapitalization: TextCapitalization.words,
                         ),
                         const SizedBox(height: 24),
                         TextField(
                           controller: _hostNameController,
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: colorScheme.onSurface),
+                          decoration: InputDecoration(
                             labelText: 'Your Name (Host)',
+                            labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                             hintText: 'e.g., John Doe',
-                            prefixIcon: Icon(Icons.person_rounded),
+                            hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                            prefixIcon: Icon(Icons.person_rounded, color: colorScheme.onSurfaceVariant),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: colorScheme.primary),
+                            ),
                           ),
                           textCapitalization: TextCapitalization.words,
                         ),
                         const SizedBox(height: 24),
                         DropdownButtonFormField<int>(
-                          value: _maxParticipants,
+                          initialValue: _maxParticipants,
                           decoration: const InputDecoration(
                             labelText: 'Max Devices',
                             prefixIcon: Icon(Icons.group_rounded),
@@ -225,6 +233,16 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
                         ),
                         const SizedBox(height: 24),
                         SwitchListTile(
+                          title: const Text('Require Manual Approval'),
+                          subtitle: const Text('Manually approve users joining the lobby'),
+                          value: _requireManualApproval,
+                          onChanged: (value) {
+                            setState(() {
+                              _requireManualApproval = value;
+                            });
+                          },
+                        ),
+                        SwitchListTile(
                           title: const Text('Private Lobby'),
                           subtitle: const Text('Require a PIN to join'),
                           value: _isPrivate,
@@ -238,10 +256,21 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
                           const SizedBox(height: 16),
                           TextField(
                             controller: _pinController,
-                            decoration: const InputDecoration(
+                            style: TextStyle(color: colorScheme.onSurface),
+                            decoration: InputDecoration(
                               labelText: 'Lobby PIN',
+                              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                               hintText: 'e.g., 1234',
-                              prefixIcon: Icon(Icons.lock_rounded),
+                              hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                              prefixIcon: Icon(Icons.lock_rounded, color: colorScheme.onSurfaceVariant),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: colorScheme.primary),
+                              ),
                             ),
                             keyboardType: TextInputType.number,
                             maxLength: 8,
@@ -309,12 +338,10 @@ class _CreateLobbyScreenState extends ConsumerState<CreateLobbyScreen> {
                     ),
                   ),
                 ),
-                ],
-                ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

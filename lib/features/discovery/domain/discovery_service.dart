@@ -1,45 +1,54 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'package:nsd/nsd.dart';
+import 'dart:io';
 import '../../lobby/domain/models/lobby.dart';
 
 class DiscoveryService {
-  final String _serviceType = '_spacedrop._tcp';
-  Registration? _registration;
-  Discovery? _discovery;
+  static const int _broadcastPort = 45454;
+  
+  RawDatagramSocket? _broadcastSocket;
+  RawDatagramSocket? _listenSocket;
+  Timer? _broadcastTimer;
 
   final _lobbiesController = StreamController<List<Lobby>>.broadcast();
   Stream<List<Lobby>> get lobbiesStream => _lobbiesController.stream;
 
   final Map<String, Lobby> _discoveredLobbies = {};
+  final Map<String, Timer> _lobbyTimeouts = {};
 
   // Host: Advertise the lobby
   Future<void> advertiseLobby(Lobby lobby) async {
     try {
-      if (_registration != null) {
-        await stopAdvertising();
-      }
+      await stopAdvertising();
 
-      final txt = {
-        'lobbyId': utf8.encode(lobby.lobbyId),
-        'hostDeviceId': utf8.encode(lobby.hostDeviceId),
-        'hostDeviceName': utf8.encode(lobby.hostDeviceName),
-        'maxParticipants': utf8.encode(lobby.maxParticipants.toString()),
-        'currentParticipants': utf8.encode(lobby.currentParticipants.toString()),
-        'lobbyType': utf8.encode(lobby.lobbyType),
-        'pinEnabled': utf8.encode(lobby.pinEnabled.toString()),
-      };
+      _broadcastSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      _broadcastSocket!.broadcastEnabled = true;
 
-      _registration = await register(
-        Service(
-          name: lobby.lobbyName,
-          type: _serviceType,
-          port: lobby.port,
-          txt: txt,
-        ),
-      );
-      debugPrint('Lobby advertised successfully: ${lobby.lobbyName}');
+      final payload = jsonEncode({
+        'lobbyId': lobby.lobbyId,
+        'lobbyName': lobby.lobbyName,
+        'hostDeviceId': lobby.hostDeviceId,
+        'hostDeviceName': lobby.hostDeviceName,
+        'maxParticipants': lobby.maxParticipants.toString(),
+        'currentParticipants': lobby.currentParticipants.toString(),
+        'lobbyType': lobby.lobbyType,
+        'pinEnabled': lobby.pinEnabled.toString(),
+        'port': lobby.port.toString(), // QUIC Port
+      });
+      final bytes = utf8.encode(payload);
+
+      _broadcastTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+        if (_broadcastSocket != null) {
+          try {
+            _broadcastSocket!.send(bytes, InternetAddress('255.255.255.255'), _broadcastPort);
+          } catch (e) {
+            debugPrint('Error sending UDP broadcast: $e');
+          }
+        }
+      });
+      
+      debugPrint('Lobby advertised successfully via UDP: ${lobby.lobbyName}');
     } catch (e) {
       debugPrint('Error advertising lobby: $e');
       rethrow;
@@ -48,76 +57,83 @@ class DiscoveryService {
 
   // Host: Stop advertising
   Future<void> stopAdvertising() async {
-    if (_registration != null) {
-      await unregister(_registration!);
-      _registration = null;
-    }
+    _broadcastTimer?.cancel();
+    _broadcastTimer = null;
+    
+    _broadcastSocket?.close();
+    _broadcastSocket = null;
   }
 
   // Client: Start searching for lobbies
   Future<void> startScanning() async {
     try {
-      if (_discovery != null) {
-        await stopScanning();
-      }
+      await stopScanning();
 
       _discoveredLobbies.clear();
+      for (final timer in _lobbyTimeouts.values) {
+        timer.cancel();
+      }
+      _lobbyTimeouts.clear();
       _lobbiesController.add([]);
 
-      _discovery = await startDiscovery(_serviceType);
+      _listenSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, _broadcastPort, reuseAddress: true, reusePort: true);
 
-      _discovery!.addListener(() {
-        final services = _discovery!.services;
-        _discoveredLobbies.clear();
-
-        for (var service in services) {
-          if (service.name != null &&
-              service.host != null &&
-              service.port != null) {
+      _listenSocket!.listen((RawSocketEvent event) {
+        if (event == RawSocketEvent.read) {
+          final datagram = _listenSocket!.receive();
+          if (datagram != null) {
             try {
-              final txt = service.txt ?? {};
-              String getTxtValue(String key) {
-                final bytes = txt[key];
-                return bytes != null ? utf8.decode(bytes) : '';
-              }
-
+              final payload = utf8.decode(datagram.data);
+              final data = jsonDecode(payload) as Map<String, dynamic>;
+              
+              final lobbyId = data['lobbyId'] as String;
+              
               final lobby = Lobby(
-                lobbyId: getTxtValue('lobbyId'),
-                lobbyName: service.name!,
-                hostDeviceId: getTxtValue('hostDeviceId'),
-                hostDeviceName: getTxtValue('hostDeviceName'),
-                hostIp: service.host!,
-                port: service.port!,
+                lobbyId: lobbyId,
+                lobbyName: data['lobbyName'] ?? 'Unknown',
+                hostDeviceId: data['hostDeviceId'] ?? '',
+                hostDeviceName: data['hostDeviceName'] ?? 'Unknown',
+                hostIp: datagram.address.address, // Use the sender's IP address
+                port: int.tryParse(data['port']?.toString() ?? '0') ?? 0,
                 createdAt: DateTime.now().millisecondsSinceEpoch,
                 status: 'ACTIVE',
-                maxParticipants:
-                    int.tryParse(getTxtValue('maxParticipants')) ?? 10,
-                currentParticipants:
-                    int.tryParse(getTxtValue('currentParticipants')) ?? 0,
-                lobbyType: getTxtValue('lobbyType').isNotEmpty ? getTxtValue('lobbyType') : 'Open',
-                pinEnabled: getTxtValue('pinEnabled') == 'true',
+                maxParticipants: int.tryParse(data['maxParticipants']?.toString() ?? '10') ?? 10,
+                currentParticipants: int.tryParse(data['currentParticipants']?.toString() ?? '0') ?? 0,
+                lobbyType: data['lobbyType'] ?? 'Open',
+                pinEnabled: data['pinEnabled'] == 'true',
               );
 
-              _discoveredLobbies[lobby.lobbyId] = lobby;
+              _discoveredLobbies[lobbyId] = lobby;
+              _lobbiesController.add(_discoveredLobbies.values.toList());
+              
+              // Reset timeout for this lobby
+              _lobbyTimeouts[lobbyId]?.cancel();
+              _lobbyTimeouts[lobbyId] = Timer(const Duration(seconds: 10), () {
+                _discoveredLobbies.remove(lobbyId);
+                _lobbiesController.add(_discoveredLobbies.values.toList());
+              });
+              
             } catch (e) {
-              debugPrint('Error parsing service data: $e');
+              // Ignore invalid packets
             }
           }
         }
-
-        _lobbiesController.add(_discoveredLobbies.values.toList());
       });
+      debugPrint('Started UDP scanning on port $_broadcastPort');
     } catch (e) {
-      debugPrint('Error starting discovery: $e');
+      debugPrint('Error starting UDP discovery: $e');
       rethrow;
     }
   }
 
   // Client: Stop searching for lobbies
   Future<void> stopScanning() async {
-    if (_discovery != null) {
-      await stopDiscovery(_discovery!);
-      _discovery = null;
+    for (final timer in _lobbyTimeouts.values) {
+      timer.cancel();
     }
+    _lobbyTimeouts.clear();
+    
+    _listenSocket?.close();
+    _listenSocket = null;
   }
 }

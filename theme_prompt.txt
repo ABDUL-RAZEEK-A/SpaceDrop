@@ -1,0 +1,3 @@
+Please redo the action of adding back the sci-fi themes (like Interstellar, The Martian, Project Hail Mary, Star Wars, Avatar, Guardians of the Galaxy) to the app. 
+
+Update the `AppThemeType` enum and extension in `lib/core/models/app_theme_type.dart` to include these themes, complete with their respective primary colors, fonts, icons, radar words, and background assets. Then, ensure the rest of the application (like settings and onboarding screens) uses these options correctly.

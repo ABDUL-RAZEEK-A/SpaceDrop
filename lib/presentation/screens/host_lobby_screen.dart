@@ -4,37 +4,50 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/lobby/presentation/providers/host_provider.dart';
 import '../../features/lobby/domain/models/lobby.dart';
+import '../widgets/space_background_wrapper.dart';
+import '../widgets/glass_container.dart';
 
 class HostLobbyScreen extends ConsumerWidget {
-  const HostLobbyScreen({super.key});
+  final String lobbyId;
+
+  const HostLobbyScreen({super.key, required this.lobbyId});
 
   Future<void> _pickFile(WidgetRef ref) async {
-    FilePickerResult? result = await FilePicker.pickFiles(allowMultiple: true);
-    if (result != null) {
-      for (final file in result.files) {
-        if (file.path != null) {
-          await ref.read(hostProvider.notifier).addSharedFile(File(file.path!));
-        }
+    final result = await FilePicker.pickFiles();
+    for (final file in result) {
+      if (file.path != null) {
+        await ref.read(hostProvider(lobbyId).notifier).addSharedFile(File(file.path!));
       }
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hostState = ref.watch(hostProvider);
+    final hostState = ref.watch(hostProvider(lobbyId));
     final lobby = hostState.currentLobby;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     if (lobby == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Lobby Closed')),
-        body: const Center(child: Text('This lobby has been closed.')),
+      return SpaceBackgroundWrapper(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text('Lobby Closed'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+          body: const Center(child: Text('This lobby has been closed.', style: TextStyle(color: Colors.white))),
+        ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
+    return SpaceBackgroundWrapper(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
         title: Column(
           children: [
             Text(
@@ -63,7 +76,8 @@ class HostLobbyScreen extends ConsumerWidget {
             ),
             tooltip: 'Close Lobby',
             onPressed: () {
-              ref.read(hostProvider.notifier).closeLobby();
+              ref.read(hostProvider(lobbyId).notifier).closeLobby();
+              Navigator.pop(context);
             },
           ),
         ],
@@ -83,20 +97,53 @@ class HostLobbyScreen extends ConsumerWidget {
                 VerticalDivider(width: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
                 Expanded(
                   flex: 2,
-                  child: _buildMainContent(context, ref, hostState, theme, colorScheme),
+                  child: Column(
+                    children: [
+                      if (lobby.isPaused)
+                        Container(
+                          color: colorScheme.errorContainer,
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Lobby is currently paused. New joins and downloads are disabled.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: colorScheme.onErrorContainer, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      Expanded(child: _buildMainContent(context, ref, hostState, theme, colorScheme)),
+                    ],
+                  ),
                 ),
               ],
             );
           } else {
             return Column(
               children: [
-                _buildSidebar(context, ref, hostState, theme, colorScheme, isCompact: true),
+                if (lobby.isPaused)
+                  Container(
+                    color: colorScheme.errorContainer,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      'Lobby is currently paused. New joins and downloads are disabled.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: colorScheme.onErrorContainer, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                Expanded(
+                  flex: 1,
+                  child: _buildSidebar(context, ref, hostState, theme, colorScheme, isCompact: false),
+                ),
                 Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                Expanded(child: _buildMainContent(context, ref, hostState, theme, colorScheme)),
+                Expanded(
+                  flex: 2, 
+                  child: _buildMainContent(context, ref, hostState, theme, colorScheme),
+                ),
               ],
             );
           }
         },
+      ),
       ),
     );
   }
@@ -109,8 +156,8 @@ class HostLobbyScreen extends ConsumerWidget {
     ColorScheme colorScheme, {
     bool isCompact = false,
   }) {
-    return Container(
-      color: colorScheme.surfaceContainerLowest,
+    return GlassContainer(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           if (hostState.pendingRequests.isNotEmpty) ...[
@@ -147,6 +194,46 @@ class HostLobbyScreen extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final request = hostState.pendingRequests[index];
                     return _buildPendingRequestTile(request, context, ref, theme, colorScheme);
+                  },
+                ),
+              ),
+            if (!isCompact) Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ],
+
+          if (hostState.coHostRequests.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.admin_panel_settings_rounded,
+                    color: colorScheme.tertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Co-Host Requests (${hostState.coHostRequests.length})',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            ),
+            if (isCompact)
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: hostState.coHostRequests.length,
+                itemBuilder: (context, index) {
+                  final request = hostState.coHostRequests[index];
+                  return _buildCoHostRequestTile(request, context, ref, theme, colorScheme);
+                },
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: hostState.coHostRequests.length,
+                  itemBuilder: (context, index) {
+                    final request = hostState.coHostRequests[index];
+                    return _buildCoHostRequestTile(request, context, ref, theme, colorScheme);
                   },
                 ),
               ),
@@ -217,14 +304,43 @@ class HostLobbyScreen extends ConsumerWidget {
               Icons.check_circle_rounded,
               color: Colors.green,
             ),
-            onPressed: () => ref.read(hostProvider.notifier).approveRequest(request),
+            onPressed: () => ref.read(hostProvider(lobbyId).notifier).approveRequest(request),
           ),
           IconButton(
             icon: Icon(
               Icons.cancel_rounded,
               color: colorScheme.error,
             ),
-            onPressed: () => ref.read(hostProvider.notifier).rejectRequest(request),
+            onPressed: () => ref.read(hostProvider(lobbyId).notifier).rejectRequest(request),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoHostRequestTile(dynamic request, BuildContext context, WidgetRef ref, ThemeData theme, ColorScheme colorScheme) {
+    return ListTile(
+      title: Text(
+        request.deviceName,
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text('Wants to be co-host', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.green,
+            ),
+            onPressed: () => ref.read(hostProvider(lobbyId).notifier).approveCoHostRequest(request),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.cancel_rounded,
+              color: colorScheme.error,
+            ),
+            onPressed: () => ref.read(hostProvider(lobbyId).notifier).rejectCoHostRequest(request),
           ),
         ],
       ),
@@ -241,33 +357,39 @@ class HostLobbyScreen extends ConsumerWidget {
         ),
       ),
       title: Text(device.deviceName, style: theme.textTheme.bodyLarge),
-      subtitle: Text('Connected', style: theme.textTheme.labelLarge?.copyWith(color: Colors.green)),
+      subtitle: Text(
+        device.permission == 'CO_HOST' ? 'Co-host' : 'Connected',
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: device.permission == 'CO_HOST' ? colorScheme.primary : Colors.green,
+        ),
+      ),
       trailing: PopupMenuButton<String>(
         icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
         onSelected: (value) {
           if (value == 'promote') {
-            ref.read(hostProvider.notifier).promoteToCoHost(device.deviceId);
+            ref.read(hostProvider(lobbyId).notifier).promoteToCoHost(device.deviceId);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('${device.deviceName} promoted to Co-host!')),
             );
           } else if (value == 'remove') {
-            ref.read(hostProvider.notifier).removeParticipant(device.deviceId);
+            ref.read(hostProvider(lobbyId).notifier).removeParticipant(device.deviceId);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('${device.deviceName} removed.')),
             );
           }
         },
         itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'promote',
-            child: Row(
-              children: [
-                Icon(Icons.star_rounded, size: 20),
-                SizedBox(width: 8),
-                Text('Make Co-host'),
-              ],
+          if (device.permission != 'CO_HOST')
+            const PopupMenuItem(
+              value: 'promote',
+              child: Row(
+                children: [
+                  Icon(Icons.star_rounded, size: 20),
+                  SizedBox(width: 8),
+                  Text('Make Co-host'),
+                ],
+              ),
             ),
-          ),
           const PopupMenuItem(
             value: 'remove',
             child: Row(
@@ -303,8 +425,8 @@ class HostLobbyScreen extends ConsumerWidget {
       }
     }
 
-    return Container(
-      color: colorScheme.surface,
+    return GlassContainer(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -342,28 +464,28 @@ class HostLobbyScreen extends ConsumerWidget {
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                     onChanged: (value) {
-                      ref.read(hostProvider.notifier).setSearchQuery(value);
+                      ref.read(hostProvider(lobbyId).notifier).setSearchQuery(value);
                     },
                   ),
                 ),
                 const SizedBox(width: 16),
                 DropdownButtonHideUnderline(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: colorScheme.outline),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  child: GlassContainer(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: DropdownButton<FileSortType>(
+                      dropdownColor: colorScheme.surface,
                       value: hostState.sortType,
+                      isDense: true,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
+                      iconSize: 20,
                       items: const [
-                        DropdownMenuItem(value: FileSortType.category, child: Text('Sort by Category')),
-                        DropdownMenuItem(value: FileSortType.name, child: Text('Sort by Name')),
-                        DropdownMenuItem(value: FileSortType.size, child: Text('Sort by Size')),
+                        DropdownMenuItem(value: FileSortType.category, child: Text('Category')),
+                        DropdownMenuItem(value: FileSortType.name, child: Text('Name')),
+                        DropdownMenuItem(value: FileSortType.size, child: Text('Size')),
                       ],
                       onChanged: (value) {
                         if (value != null) {
-                          ref.read(hostProvider.notifier).setSortType(value);
+                          ref.read(hostProvider(lobbyId).notifier).setSortType(value);
                         }
                       },
                     ),
@@ -501,16 +623,20 @@ class HostLobbyScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
                 left: 24,
                 right: 24,
                 top: 24,
@@ -526,7 +652,7 @@ class HostLobbyScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   DropdownButtonFormField<int>(
-                    value: maxParticipants,
+                    initialValue: maxParticipants,
                     decoration: const InputDecoration(
                       labelText: 'Max Devices',
                       prefixIcon: Icon(Icons.group_rounded),
@@ -543,8 +669,23 @@ class HostLobbyScreen extends ConsumerWidget {
                         setModalState(() {
                           maxParticipants = value;
                         });
-                        ref.read(hostProvider.notifier).updateMaxParticipants(value);
+                        ref.read(hostProvider(lobbyId).notifier).updateMaxParticipants(value);
                       }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final currentLobby = ref.watch(hostProvider(lobbyId)).currentLobby;
+                      if (currentLobby == null) return const SizedBox.shrink();
+                      return SwitchListTile(
+                        title: const Text('Pause Lobby'),
+                        subtitle: const Text('Block new joins & downloads'),
+                        value: currentLobby.isPaused,
+                        onChanged: (value) {
+                          ref.read(hostProvider(lobbyId).notifier).togglePauseLobby();
+                        },
+                      );
                     },
                   ),
                   const SizedBox(height: 32),

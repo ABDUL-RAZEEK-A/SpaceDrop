@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../../features/discovery/presentation/providers/client_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../widgets/space_background_wrapper.dart';
+import '../widgets/glass_container.dart';
 
 class ClientLobbyScreen extends ConsumerWidget {
   const ClientLobbyScreen({super.key});
@@ -17,8 +19,14 @@ class ClientLobbyScreen extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     if (lobby == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Lobby Closed')),
+      return SpaceBackgroundWrapper(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text('Lobby Closed'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -32,12 +40,17 @@ class ClientLobbyScreen extends ConsumerWidget {
             ],
           ),
         ),
-      );
+      ),
+    );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
+    return SpaceBackgroundWrapper(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Column(
           children: [
             Text(
               lobby.lobbyName,
@@ -57,26 +70,51 @@ class ClientLobbyScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          if (clientState.isCoHost)
+          if (clientState.isCoHost) ...[
+            IconButton(
+              icon: Icon(clientState.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, color: colorScheme.primary),
+              tooltip: clientState.isPaused ? 'Unpause Lobby' : 'Pause Lobby',
+              onPressed: () {
+                ref.read(clientProvider.notifier).toggleLobbyPause(!clientState.isPaused);
+              },
+            ),
             IconButton(
               icon: Icon(Icons.upload_file_rounded, color: colorScheme.primary),
               tooltip: 'Share File (Co-host)',
               onPressed: () async {
-                final result = await FilePicker.pickFiles(allowMultiple: true);
-                if (result != null) {
-                  for (final file in result.files) {
+                final result = await FilePicker.pickFiles();
+                if (result.isNotEmpty) {
+                  for (final file in result) {
                     if (file.path != null) {
                       ref.read(clientProvider.notifier).uploadFile(File(file.path!));
                     }
                   }
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Uploading ${result.files.length} file(s)...')),
+                      SnackBar(content: Text('Uploading ${result.length} file(s)...')),
                     );
                   }
                 }
               },
             ),
+          ] else ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              child: TextButton.icon(
+                icon: Icon(Icons.admin_panel_settings_rounded, color: colorScheme.primary, size: 18),
+                label: Text('Request Co-host', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(
+                  backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                ),
+                onPressed: () {
+                  ref.read(clientProvider.notifier).requestCoHost();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Co-host request sent')),
+                  );
+                },
+              ),
+            ),
+          ],
           IconButton(
             icon: Icon(Icons.exit_to_app_rounded, color: colorScheme.error),
             tooltip: 'Leave Lobby',
@@ -86,11 +124,21 @@ class ClientLobbyScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Container(
-        color: colorScheme.surface,
+      body: GlassContainer(
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (clientState.isPaused)
+              Container(
+                color: colorScheme.errorContainer,
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Lobby is currently paused. Downloads are disabled.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: colorScheme.onErrorContainer, fontWeight: FontWeight.bold),
+                ),
+              ),
             if (!clientState.isApproved)
               Expanded(
                 child: Center(
@@ -122,30 +170,31 @@ class ClientLobbyScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: clientState.pendingRequests.length,
-                  itemBuilder: (context, index) {
-                    final request = clientState.pendingRequests[index];
-                    return ListTile(
-                      title: Text(request['deviceName'], style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                      subtitle: Text('Wants to join', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check_circle_rounded, color: Colors.green),
-                            onPressed: () => ref.read(clientProvider.notifier).approveJoinRequest(request['requestId']),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.cancel_rounded, color: colorScheme.error),
-                            onPressed: () => ref.read(clientProvider.notifier).rejectJoinRequest(request['requestId']),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                Expanded(
+                  flex: 1,
+                  child: ListView.builder(
+                    itemCount: clientState.pendingRequests.length,
+                    itemBuilder: (context, index) {
+                      final request = clientState.pendingRequests[index];
+                      return ListTile(
+                        title: Text(request['deviceName'], style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        subtitle: Text('Wants to join', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.check_circle_rounded, color: Colors.green),
+                              onPressed: () => ref.read(clientProvider.notifier).approveJoinRequest(request['requestId']),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.cancel_rounded, color: colorScheme.error),
+                              onPressed: () => ref.read(clientProvider.notifier).rejectJoinRequest(request['requestId']),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
                 Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ],
@@ -212,7 +261,10 @@ class ClientLobbyScreen extends ConsumerWidget {
                       final isSelected = clientState.selectedFileIds.contains(fileId);
                       final downloadProgress = clientState.downloadProgresses[fileId];
                       final isDownloading = downloadProgress != null && downloadProgress < 1.0;
-                      final isCompleted = downloadProgress == 1.0;
+                      
+                      final filePath = '${settingsState.downloadDirectory}/$fileName';
+                      final fileExists = File(filePath).existsSync();
+                      final isCompleted = downloadProgress == 1.0 || fileExists;
 
                       return Card(
                         elevation: 0,
@@ -274,9 +326,32 @@ class ClientLobbyScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 16),
                                 if (isCompleted)
-                                  const Icon(Icons.check_circle_rounded, color: Colors.green)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                                      const SizedBox(width: 4),
+                                      Text('Downloaded', style: theme.textTheme.labelMedium?.copyWith(color: Colors.green, fontWeight: FontWeight.bold)),
+                                    ],
+                                  )
                                 else if (isDownloading)
-                                  Text('${(downloadProgress * 100).toStringAsFixed(0)}%')
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('${(downloadProgress * 100).toStringAsFixed(0)}%'),
+                                      IconButton(
+                                        icon: Icon(
+                                          clientState.pausedDownloads.contains(fileId) 
+                                            ? Icons.play_arrow_rounded 
+                                            : Icons.pause_rounded, 
+                                          color: colorScheme.primary,
+                                        ),
+                                        onPressed: () {
+                                          ref.read(clientProvider.notifier).togglePauseDownload(fileId);
+                                        },
+                                      ),
+                                    ],
+                                  )
                                 else
                                   Icon(Icons.download_rounded, color: colorScheme.primary),
                                 if (clientState.isCoHost)
@@ -300,8 +375,8 @@ class ClientLobbyScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+                    color: Colors.transparent,
+                    border: Border(top: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
                   ),
                   child: Row(
                     children: [
@@ -330,6 +405,7 @@ class ClientLobbyScreen extends ConsumerWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

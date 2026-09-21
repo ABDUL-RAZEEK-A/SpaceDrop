@@ -16,22 +16,23 @@ void main() async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
-      child: const SpaceDropApp(),
+      child: const BeaconSyncApp(),
     ),
   );
 }
 
-class SpaceDropApp extends ConsumerWidget {
-  const SpaceDropApp({super.key});
+class BeaconSyncApp extends ConsumerWidget {
+  const BeaconSyncApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userName = ref.watch(userNameProvider);
+    final planet = ref.watch(themeProvider);
     
     return MaterialApp(
-      title: 'SpaceDrop',
+      title: 'BeaconSync',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.buildTheme(planet),
       home: userName.isEmpty ? const OnboardingScreen() : const HomeScreen(),
     );
   }

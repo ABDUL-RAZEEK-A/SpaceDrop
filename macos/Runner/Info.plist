@@ -29,7 +29,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>SpaceDrop needs to access the local network to discover and host file-sharing lobbies.</string>
+	<string>BeaconSync needs to access the local network to discover and host file-sharing lobbies.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_spacedrop._tcp</string>

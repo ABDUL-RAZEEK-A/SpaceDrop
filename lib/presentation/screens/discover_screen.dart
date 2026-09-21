@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/discovery/presentation/providers/client_provider.dart';
 import '../../features/lobby/presentation/providers/host_provider.dart';
+import '../../features/lobby/presentation/providers/active_lobbies_provider.dart';
+
 import '../../core/preferences/user_preferences.dart';
 import '../../features/lobby/domain/models/lobby.dart';
+import '../widgets/glass_container.dart';
 import 'client_lobby_screen.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
@@ -96,22 +99,27 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final hostState = ref.watch(hostProvider);
-    final myHostDeviceId = hostState.currentLobby?.hostDeviceId;
+    final activeLobbies = ref.watch(activeLobbiesProvider);
+    final myHostDeviceIds = activeLobbies
+        .map((id) => ref.watch(hostProvider(id)).currentLobby?.hostDeviceId)
+        .where((id) => id != null)
+        .toSet();
     
     final filteredLobbies = clientState.availableLobbies
-        .where((lobby) => lobby.hostDeviceId != myHostDeviceId)
+        .where((lobby) => !myHostDeviceIds.contains(lobby.hostDeviceId))
         .toList();
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Device Name Input Section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-            color: colorScheme.surfaceContainerLowest,
-            child: Column(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: GlassContainer(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
@@ -119,10 +127,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
                   children: [
                     Text(
                       'Join a Space',
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.refresh_rounded),
+                      icon: Icon(Icons.refresh_rounded, color: colorScheme.onSurface),
                       tooltip: 'Refresh',
                       onPressed: () {
                         ref.read(clientProvider.notifier).stopScanning();
@@ -139,14 +147,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
                 const SizedBox(height: 16),
                 TextField(
                   controller: _deviceNameController,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
                     labelText: 'Your Device Name',
+                    labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                     hintText: "e.g., Jane's iPhone",
-                    prefixIcon: Icon(Icons.smartphone_rounded),
+                    hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                    prefixIcon: Icon(Icons.smartphone_rounded, color: colorScheme.onSurfaceVariant),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.primary),
+                    ),
                   ),
                   textCapitalization: TextCapitalization.words,
                 ),
               ],
+            ),
             ),
           ),
           
@@ -170,8 +190,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
         children: [
         if (isScanning)
           SizedBox(
-            width: 200,
-            height: 200,
+            width: 300,
+            height: 300,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -217,6 +237,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
                     ),
                   ),
                 ),
+
                 Container(
                   width: 16,
                   height: 16,
@@ -248,7 +269,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
         ),
         const SizedBox(height: 8),
         Text(
-          isScanning ? 'Looking for active LobbyCast sessions...' : 'Try refreshing or host your own.',
+          isScanning ? 'Scanning for nearby SpaceShips...' : 'No SpaceShips found. Try refreshing or deploy your own.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -300,22 +321,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with SingleTick
                         style: theme.textTheme.titleMedium,
                       ),
                       const SizedBox(height: 4),
+                      Text(
+                        '${lobby.hostDeviceName} has a SpaceShip 🚀',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.person_rounded, size: 14, color: colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 4),
-                          Text(
-                            lobby.hostDeviceName,
-                            style: theme.textTheme.labelLarge,
-                          ),
-                          const SizedBox(width: 8),
-                          Container(width: 4, height: 4, decoration: BoxDecoration(color: colorScheme.outlineVariant, shape: BoxShape.circle)),
-                          const SizedBox(width: 8),
                           Icon(lobby.pinEnabled ? Icons.lock_rounded : Icons.lock_open_rounded, size: 14, color: colorScheme.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Text(
                             lobby.lobbyType,
-                            style: theme.textTheme.labelLarge,
+                            style: theme.textTheme.labelMedium,
                           ),
                         ],
                       ),
